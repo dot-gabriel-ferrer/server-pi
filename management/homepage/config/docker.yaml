@@ -1,0 +1,4 @@
+# Docker integration — Homepage reads labels from the local Docker socket.
+# Every container that carries homepage.* labels will appear as a service card.
+my-docker:
+  socket: /var/run/docker.sock

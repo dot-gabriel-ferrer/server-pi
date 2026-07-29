@@ -1,0 +1,8 @@
+# Static service entries for resources not managed by Docker labels.
+# Docker-labeled services (Portainer, Glances, Zigbee2MQTT …) are discovered
+# automatically via docker.yaml — no manual entries needed for those.
+- Infrastructure:
+    - Raspberry Pi Host:
+        icon: raspberrypi.png
+        href: "http://localhost:${GLANCES_PORT:-61208}"
+        description: Host metrics — Glances web UI

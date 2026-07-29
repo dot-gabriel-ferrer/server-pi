@@ -1,0 +1,10 @@
+- Developer:
+    - GitHub Repository:
+        abbr: GH
+        href: https://github.com/dot-gabriel-ferrer/server-pi
+    - Docker Hub:
+        abbr: DH
+        href: https://hub.docker.com
+    - Compose Reference:
+        abbr: DC
+        href: https://docs.docker.com/compose/compose-file/

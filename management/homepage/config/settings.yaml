@@ -1,0 +1,28 @@
+# Homepage global settings
+title: server-pi Dashboard
+useEqualHeights: true
+
+background:
+  image: https://images.unsplash.com/photo-1519681393784-d120267933ba
+  blur: sm
+  saturate: 50
+  brightness: 50
+  opacity: 50
+
+theme: dark
+color: slate
+
+# Show the status dot on each service card
+statusStyle: dot
+
+# Layout — groups shown in this order
+layout:
+  Management:
+    style: row
+    columns: 3
+  Domotics:
+    style: row
+    columns: 3
+  Astronomy:
+    style: row
+    columns: 2
