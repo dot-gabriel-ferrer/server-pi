@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Server Pi Cultivo</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 1rem 2rem; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; }
+      button { padding: 0.5rem 1rem; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid #eee; text-align: left; padding: 0.4rem; }
+      img { max-width: 100%; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <h1>Portal cultivo local-first</h1>
+    <div class="grid">
+      <div class="card">
+        <h2>Variables en tiempo real</h2>
+        <pre id="latest">Cargando...</pre>
+      </div>
+      <div class="card">
+        <h2>Actuador riego</h2>
+        <pre id="actuator">Cargando...</pre>
+        <button onclick="manualWater()">Riego manual (30s)</button>
+      </div>
+      <div class="card">
+        <h2>Histórico (últimas 2h)</h2>
+        <table>
+          <thead><tr><th>ts</th><th>temp</th><th>hum</th><th>suelo</th></tr></thead>
+          <tbody id="history"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h2>Cámara</h2>
+        <a id="stream" target="_blank">Abrir stream RTSP</a>
+        <div><img id="snapshot" alt="snapshot" /></div>
+      </div>
+    </div>
+
+    <script>
+      const zone = "greenhouse";
+      const actuatorId = "irrigation-main";
+
+      async function refresh() {
+        const latest = await fetch(`/api/v1/sensors/latest?zone=${zone}`).then(r => r.json());
+        document.getElementById('latest').textContent = JSON.stringify(latest, null, 2);
+
+        const act = await fetch(`/api/v1/actuators/${actuatorId}/state?zone=${zone}`).then(r => r.json());
+        document.getElementById('actuator').textContent = JSON.stringify(act, null, 2);
+
+        const to = new Date().toISOString();
+        const from = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
+        const deviceId = latest?.[0]?.device_id;
+        if (deviceId) {
+          const hist = await fetch(`/api/v1/sensors/history?device_id=${encodeURIComponent(deviceId)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`).then(r => r.json());
+          document.getElementById('history').innerHTML = hist.slice(-20).map(row => `<tr><td>${row.ts}</td><td>${row.temperature_c ?? ''}</td><td>${row.humidity_pct ?? ''}</td><td>${row.soil_moisture_pct ?? ''}</td></tr>`).join('');
+        }
+
+        const camera = await fetch(`/api/v1/camera`).then(r => r.json());
+        document.getElementById('stream').href = camera.stream_url || '#';
+        document.getElementById('stream').textContent = camera.stream_url || 'Sin stream configurado';
+        if (camera.latest_snapshot_url) {
+          document.getElementById('snapshot').src = camera.latest_snapshot_url + '?t=' + Date.now();
+        }
+      }
+
+      async function manualWater() {
+        if (!confirm('¿Confirmas activar riego manual por 30 segundos?')) return;
+        await fetch(`/api/v1/actuators/${actuatorId}/command`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            ts: new Date().toISOString(),
+            zone,
+            actor: 'portal-ui',
+            reason: 'manual button',
+            action: 'on',
+            duration_sec: 30,
+            mode: 'manual'
+          })
+        });
+        await refresh();
+      }
+
+      refresh();
+      setInterval(refresh, 15000);
+    </script>
+  </body>
+</html>

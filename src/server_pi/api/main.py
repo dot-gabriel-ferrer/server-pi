@@ -7,10 +7,11 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from server_pi.api.app_state import AppState, run_periodic_tasks
 from server_pi.api.camera import CameraService
@@ -37,6 +38,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 logger = logging.getLogger("server_pi.api")
+templates = Jinja2Templates(directory="src/server_pi/api/templates")
 
 
 def _build_repo() -> TimeSeriesRepository:
@@ -132,6 +134,12 @@ def get_runtime() -> AppState:
 def health() -> dict[str, str]:
     """Health endpoint."""
     return {"status": "ok", "ts": datetime.now(UTC).isoformat()}
+
+
+@app.get("/", response_class=HTMLResponse)
+def portal(request: Request) -> HTMLResponse:
+    """Render minimal local portal UI."""
+    return templates.TemplateResponse("dashboard.html", {"request": request})
 
 
 @app.get("/api/v1/sensors/latest")
