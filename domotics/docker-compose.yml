@@ -90,5 +90,5 @@ services:
       - "homepage.group=Domotics"
       - "homepage.name=Home Assistant"
       - "homepage.icon=home-assistant.png"
-      - "homepage.href=http://localhost:8123"
+      - "homepage.href=http://${HOMEPAGE_HOST:-pi.local}:8123"
       - "homepage.description=Home automation platform"
