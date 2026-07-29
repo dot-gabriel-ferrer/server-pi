@@ -72,7 +72,7 @@ services:
       - "homepage.group=Management"
       - "homepage.name=Glances"
       - "homepage.icon=glances.png"
-      - "homepage.href=http://localhost:${GLANCES_PORT}"
+      - "homepage.href=http://${PI_HOST}:${GLANCES_PORT}"
       - "homepage.description=System monitoring dashboard"
 
   # ── Homepage ──────────────────────────────────────────────────────────────────
