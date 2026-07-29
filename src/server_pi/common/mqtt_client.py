@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 class MqttPublisher:
     """Wrapper around paho-mqtt for publish-only operations."""
 
-    def __init__(self, host: str, port: int, username: str | None = None, password: str | None = None) -> None:
+    def __init__(
+        self, host: str, port: int, username: str | None = None, password: str | None = None
+    ) -> None:
         self._client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         if username and password:
             self._client.username_pw_set(username, password)
@@ -27,13 +29,27 @@ class MqttPublisher:
         self._client.connect_async(host, port, 30)
         self._client.loop_start()
 
-    def _on_connect(self, client: mqtt.Client, userdata: object, flags: object, reason_code: object, properties: object) -> None:
+    def _on_connect(
+        self,
+        client: mqtt.Client,
+        userdata: object,
+        flags: object,
+        reason_code: object,
+        properties: object,
+    ) -> None:
         del client, userdata, flags, properties
         if int(reason_code) == 0:
             self._connected.set()
             logger.info("mqtt_connected")
 
-    def _on_disconnect(self, client: mqtt.Client, userdata: object, disconnect_flags: object, reason_code: object, properties: object) -> None:
+    def _on_disconnect(
+        self,
+        client: mqtt.Client,
+        userdata: object,
+        disconnect_flags: object,
+        reason_code: object,
+        properties: object,
+    ) -> None:
         del client, userdata, disconnect_flags, reason_code, properties
         self._connected.clear()
         logger.warning("mqtt_disconnected")
@@ -51,7 +67,9 @@ class MqttPublisher:
         """
         if not self._connected.wait(timeout=3):
             raise RuntimeError("mqtt broker unavailable")
-        result = self._client.publish(topic, json.dumps(payload, sort_keys=True), qos=1, retain=retain)
+        result = self._client.publish(
+            topic, json.dumps(payload, sort_keys=True), qos=1, retain=retain
+        )
         if result.rc != mqtt.MQTT_ERR_SUCCESS:
             raise RuntimeError(f"mqtt publish failed with code={result.rc}")
 

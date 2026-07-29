@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,9 +15,21 @@ from fastapi.staticfiles import StaticFiles
 from server_pi.api.app_state import AppState, run_periodic_tasks
 from server_pi.api.camera import CameraService
 from server_pi.common.config import settings
-from server_pi.common.models import ActuatorCommandRequest, ActuatorState, EventRecord, EventType, IrrigationRule, SensorReading
+from server_pi.common.models import (
+    ActuatorCommandRequest,
+    ActuatorState,
+    EventRecord,
+    EventType,
+    IrrigationRule,
+    SensorReading,
+)
 from server_pi.common.mqtt_client import MqttPublisher
-from server_pi.common.storage import InfluxTimeSeriesRepository, InMemoryTimeSeriesRepository, StateRepository, TimeSeriesRepository
+from server_pi.common.storage import (
+    InfluxTimeSeriesRepository,
+    InMemoryTimeSeriesRepository,
+    StateRepository,
+    TimeSeriesRepository,
+)
 from server_pi.rules_engine.engine import IrrigationRuleEngine
 
 logging.basicConfig(
@@ -48,7 +60,7 @@ def _sensor_message_handler(runtime: AppState):
         except Exception as exc:  # noqa: BLE001
             runtime.timeseries.write_event(
                 EventRecord(
-                    ts=datetime.now(timezone.utc),
+                    ts=datetime.now(UTC),
                     zone=str(payload.get("zone", settings.default_zone)),
                     device_id=str(payload.get("device_id", "unknown")),
                     type=EventType.error,
@@ -91,7 +103,9 @@ async def lifespan(app: FastAPI):
     publisher.subscribe_json("cultivo/+/sensor/+/state", _sensor_message_handler(runtime))
     app.state.runtime = runtime
     app.mount("/snapshots", StaticFiles(directory=settings.camera_snapshot_dir), name="snapshots")
-    worker = asyncio.create_task(run_periodic_tasks(app.state.runtime, interval_sec=settings.camera_snapshot_interval_sec))
+    worker = asyncio.create_task(
+        run_periodic_tasks(app.state.runtime, interval_sec=settings.camera_snapshot_interval_sec)
+    )
     try:
         yield
     finally:
@@ -117,11 +131,13 @@ def get_runtime() -> AppState:
 @app.get("/health")
 def health() -> dict[str, str]:
     """Health endpoint."""
-    return {"status": "ok", "ts": datetime.now(timezone.utc).isoformat()}
+    return {"status": "ok", "ts": datetime.now(UTC).isoformat()}
 
 
 @app.get("/api/v1/sensors/latest")
-def sensors_latest(zone: str = Query(..., min_length=1), runtime: AppState = Depends(get_runtime)) -> list[SensorReading]:
+def sensors_latest(
+    zone: str = Query(..., min_length=1), runtime: AppState = Depends(get_runtime)
+) -> list[SensorReading]:
     """Return latest sensor values for zone."""
     return runtime.timeseries.get_latest_by_zone(zone)
 
@@ -137,11 +153,15 @@ def sensors_history(
     """Return historical sensor values in UTC range."""
     if to_ts <= from_ts:
         raise HTTPException(status_code=422, detail="'to' must be greater than 'from'")
-    return runtime.timeseries.get_history(device_id=device_id, from_ts=from_ts, to_ts=to_ts, interval=interval)
+    return runtime.timeseries.get_history(
+        device_id=device_id, from_ts=from_ts, to_ts=to_ts, interval=interval
+    )
 
 
 @app.post("/api/v1/sensors/ingest", status_code=202)
-def sensors_ingest(reading: SensorReading, runtime: AppState = Depends(get_runtime)) -> dict[str, str]:
+def sensors_ingest(
+    reading: SensorReading, runtime: AppState = Depends(get_runtime)
+) -> dict[str, str]:
     """Ingest normalized sensor message."""
     runtime.ingest_sensor(reading)
     return {"status": "accepted"}
@@ -163,7 +183,9 @@ def actuator_command(
 
 
 @app.get("/api/v1/actuators/{actuator_id}/state")
-def actuator_state(actuator_id: str, zone: str = Query(..., min_length=1), runtime: AppState = Depends(get_runtime)) -> ActuatorState:
+def actuator_state(
+    actuator_id: str, zone: str = Query(..., min_length=1), runtime: AppState = Depends(get_runtime)
+) -> ActuatorState:
     """Get current actuator state."""
     state = runtime.state_repo.get_actuator_state(actuator_id)
     if state is None:
@@ -184,7 +206,9 @@ def rules_irrigation(
 
 
 @app.get("/api/v1/events")
-def events(runtime: AppState = Depends(get_runtime), limit: int = Query(200, ge=1, le=1000)) -> list[EventRecord]:
+def events(
+    runtime: AppState = Depends(get_runtime), limit: int = Query(200, ge=1, le=1000)
+) -> list[EventRecord]:
     """Return event timeline."""
     return runtime.timeseries.get_events(limit=limit)
 

@@ -7,7 +7,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from bleak import BleakScanner
 from bleak.backends.device import BLEDevice
@@ -50,7 +50,9 @@ class BleCollector:
 
     async def _run(self) -> None:
         while True:
-            devices = await BleakScanner.discover(timeout=self._config.scan_interval_sec, return_adv=True)
+            devices = await BleakScanner.discover(
+                timeout=self._config.scan_interval_sec, return_adv=True
+            )
             self._process_scan(devices)
             await asyncio.sleep(self._config.scan_interval_sec)
 
@@ -63,18 +65,22 @@ class BleCollector:
             if not self._should_publish(device_id, parsed):
                 continue
             topic = f"cultivo/{self._config.zone}/sensor/{device_id}/state"
-            self._client.publish(topic, json.dumps(parsed.payload, sort_keys=True), qos=1, retain=False)
+            self._client.publish(
+                topic, json.dumps(parsed.payload, sort_keys=True), qos=1, retain=False
+            )
             self._last_signatures[device_id] = parsed.signature
-            self._last_publish_at[device_id] = datetime.now(tz=timezone.utc)
+            self._last_publish_at[device_id] = datetime.now(tz=UTC)
 
-    def _parse_device(self, device: BLEDevice, advertisement: AdvertisementData) -> ParsedBlePayload | None:
+    def _parse_device(
+        self, device: BLEDevice, advertisement: AdvertisementData
+    ) -> ParsedBlePayload | None:
         for parser in PARSERS:
             if parser.supports(device, advertisement):
                 return parser.parse(device, advertisement, self._config.zone)
         return None
 
     def _should_publish(self, device_id: str, parsed: ParsedBlePayload) -> bool:
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         last_sig = self._last_signatures.get(device_id)
         last_at = self._last_publish_at.get(device_id)
         if last_sig == parsed.signature and last_at is not None:
