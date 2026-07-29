@@ -154,9 +154,9 @@ git submodule add https://github.com/dot-gabriel-ferrer/telesco-pi \
     astronomy/telesco-pi
 git submodule update --init --recursive
 
-# Commit the submodule reference
-git add .gitmodules astronomy/telesco-pi
-git commit -m "feat(astronomy): add telesco-pi as a git submodule"
+# Optional (only if you're contributing changes back to this repository):
+# git add .gitmodules astronomy/telesco-pi
+# git commit -m "feat(astronomy): add telesco-pi as a git submodule"
 ```
 
 > See [`astronomy/README.md`](astronomy/README.md) for full submodule management
