@@ -40,7 +40,7 @@ services:
       - "homepage.group=Management"
       - "homepage.name=Portainer"
       - "homepage.icon=portainer.png"
-      - "homepage.href=http://localhost:${PORTAINER_PORT}"
+      - "homepage.href=http://${PI_HOST}:${PORTAINER_PORT}"
       - "homepage.description=Docker container management UI"
 
   # ── Glances ───────────────────────────────────────────────────────────────────
