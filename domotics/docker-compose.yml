@@ -1,0 +1,94 @@
+name: domotics
+
+# ─── Networks ─────────────────────────────────────────────────────────────────
+# Home Assistant uses host networking and therefore does NOT join server-pi-net.
+# Mosquitto and Zigbee2MQTT join server-pi-net so they can be reached by the
+# management module (e.g., Homepage discovery).
+networks:
+  server-pi-net:
+    external: true
+
+# ─── Services ─────────────────────────────────────────────────────────────────
+services:
+
+  # ── Eclipse Mosquitto ─────────────────────────────────────────────────────────
+  # Lightweight MQTT broker.  Zigbee2MQTT and Home Assistant publish/subscribe
+  # through this broker.
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "${MQTT_PORT}:1883"
+      - "${MQTT_WS_PORT}:9001"
+    volumes:
+      # Static configuration file (listener setup, persistence, logging)
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      # Persistent message store
+      - ${DATA_DIR}/mosquitto/data:/mosquitto/data
+      # Log output
+      - ${DATA_DIR}/mosquitto/log:/mosquitto/log
+    networks:
+      - server-pi-net
+    labels:
+      - "homepage.group=Domotics"
+      - "homepage.name=Mosquitto"
+      - "homepage.icon=mqtt.png"
+      - "homepage.description=MQTT Broker (port ${MQTT_PORT})"
+
+  # ── Zigbee2MQTT ───────────────────────────────────────────────────────────────
+  # Bridges the Zigbee coordinator to the MQTT broker.
+  # The coordinator is mapped by its stable USB serial ID (set in .env) so that
+  # the path survives reboots and USB re-enumerations.
+  zigbee2mqtt:
+    image: koenkk/zigbee2mqtt:latest
+    container_name: zigbee2mqtt
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    environment:
+      - TZ=${TZ}
+    ports:
+      - "${Z2M_PORT}:8080"
+    volumes:
+      # Zigbee2MQTT data directory (configuration, devices database, etc.)
+      - ${DATA_DIR}/zigbee2mqtt:/app/data
+    devices:
+      # Map the Zigbee coordinator by device ID to the fixed path /dev/ttyACM0
+      # inside the container.  Update ZIGBEE_DEVICE in .env to match your dongle.
+      - ${ZIGBEE_DEVICE}:/dev/ttyACM0
+    networks:
+      - server-pi-net
+    labels:
+      - "homepage.group=Domotics"
+      - "homepage.name=Zigbee2MQTT"
+      - "homepage.icon=zigbee2mqtt.png"
+      - "homepage.href=http://localhost:${Z2M_PORT}"
+      - "homepage.description=Zigbee gateway and device manager"
+
+  # ── Home Assistant ────────────────────────────────────────────────────────────
+  # Home automation platform.  Uses host networking so that mDNS, SSDP and other
+  # LAN-discovery protocols (used by Chromecast, DLNA, Matter, etc.) work without
+  # any extra configuration.
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    privileged: true
+    # Host networking — mandatory for LAN discovery protocols.
+    # Port 8123 (HTTP) is available directly on the host; no port mapping needed.
+    network_mode: host
+    environment:
+      - TZ=${TZ}
+    volumes:
+      # Persistent Home Assistant configuration directory
+      - ${HASS_CONFIG_DIR}:/config
+      - /etc/localtime:/etc/localtime:ro
+      # D-Bus socket — required for Bluetooth integration
+      - /run/dbus:/run/dbus:ro
+    labels:
+      - "homepage.group=Domotics"
+      - "homepage.name=Home Assistant"
+      - "homepage.icon=home-assistant.png"
+      - "homepage.href=http://localhost:8123"
+      - "homepage.description=Home automation platform"

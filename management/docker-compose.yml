@@ -1,0 +1,97 @@
+name: management
+
+# ─── Networks ─────────────────────────────────────────────────────────────────
+# The shared bridge network must be created before launching any module:
+#   docker network create server-pi-net
+networks:
+  server-pi-net:
+    external: true
+
+# ─── Volumes ──────────────────────────────────────────────────────────────────
+volumes:
+  portainer_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_DIR}/portainer
+
+# ─── Services ─────────────────────────────────────────────────────────────────
+services:
+
+  # ── Portainer ────────────────────────────────────────────────────────────────
+  # Docker container management UI.
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "${PORTAINER_AGENT_PORT}:8000"
+      - "${PORTAINER_PORT}:9000"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer_data:/data
+    networks:
+      - server-pi-net
+    labels:
+      - "homepage.group=Management"
+      - "homepage.name=Portainer"
+      - "homepage.icon=portainer.png"
+      - "homepage.href=http://localhost:${PORTAINER_PORT}"
+      - "homepage.description=Docker container management UI"
+
+  # ── Glances ───────────────────────────────────────────────────────────────────
+  # System monitoring dashboard.  Runs with pid:host so it can enumerate all
+  # host processes.  The thermal sysfs tree is mounted read-only so Glances can
+  # report the SoC temperature of the Raspberry Pi 5.
+  glances:
+    image: nicolargo/glances:latest-full
+    container_name: glances
+    restart: unless-stopped
+    pid: host
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - GLANCES_OPT=-w
+    ports:
+      - "${GLANCES_PORT}:61208"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/os-release:/etc/os-release:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      # Raspberry Pi thermal zones (SoC temperature, etc.)
+      - /sys/class/thermal:/sys/class/thermal:ro
+    networks:
+      - server-pi-net
+    labels:
+      - "homepage.group=Management"
+      - "homepage.name=Glances"
+      - "homepage.icon=glances.png"
+      - "homepage.href=http://localhost:${GLANCES_PORT}"
+      - "homepage.description=System monitoring dashboard"
+
+  # ── Homepage ──────────────────────────────────────────────────────────────────
+  # Service dashboard that auto-discovers containers via Docker labels.
+  # All containers that should appear in Homepage must carry homepage.* labels.
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    ports:
+      - "${HOMEPAGE_PORT}:3000"
+    volumes:
+      # Configuration files (services.yaml, docker.yaml, etc.)
+      - ./homepage/config:/app/config
+      # Docker socket — required for automatic service discovery via labels
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - server-pi-net

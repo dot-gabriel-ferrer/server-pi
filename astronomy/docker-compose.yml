@@ -1,0 +1,81 @@
+name: astronomy
+
+# ─── Networks ─────────────────────────────────────────────────────────────────
+networks:
+  server-pi-net:
+    external: true
+
+# ─── Services ─────────────────────────────────────────────────────────────────
+services:
+
+  # ── telesco-pi ────────────────────────────────────────────────────────────────
+  # Astronomical instrumentation and astrometry service.
+  #
+  # SOURCE:
+  #   This service is maintained in a separate repository (telesco-pi) that is
+  #   integrated here as a Git submodule.  See astronomy/README.md for the
+  #   step-by-step integration instructions and the required Git commands.
+  #
+  # BEFORE RUNNING `docker compose up`:
+  #   1. Add the submodule (once):
+  #        git submodule add https://github.com/dot-gabriel-ferrer/telesco-pi \
+  #            astronomy/telesco-pi
+  #        git submodule update --init --recursive
+  #   2. The Dockerfile must be present at astronomy/telesco-pi/Dockerfile.
+  #      If the repository uses a different build method, adjust `build` below.
+  telesco-pi:
+    build:
+      context: ./telesco-pi
+      dockerfile: Dockerfile
+    image: telesco-pi:local
+    container_name: telesco-pi
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    ports:
+      - "${TELESCO_PORT}:5000"
+    volumes:
+      # Persistent data directory (captured images, astrometry index files, etc.)
+      - ${DATA_DIR}/telesco-pi:/data
+
+    # ── USB Bus Access ─────────────────────────────────────────────────────────
+    # Grants the container read/write access to all USB devices on the host bus.
+    # This is required to control:
+    #   • Telescope mount via USB-serial adapter (e.g. EQMod/HID protocol)
+    #   • Astronomy cameras (e.g. ZWO ASI series via libASICamera2)
+    #
+    # /dev/bus/usb is the standard Linux USB device tree.  All buses and all
+    # device nodes are passed through so that hot-plugged devices are accessible
+    # without restarting the container.
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    # Grant permission on USB character-device major number 189 (all minors):
+    # r=read, m=mknod, w=write — matches the permissions libusb needs.
+    device_cgroup_rules:
+      - "c 189:* rmw"
+
+    # ── Resource Limits ────────────────────────────────────────────────────────
+    # Plate-solving (astrometry.net / astap) is computationally expensive.
+    # The caps below prevent this container from monopolising the CPU and RAM of
+    # the Raspberry Pi 5 and starving the domotics / telemetry services.
+    #
+    # Adjust TELESCO_CPU_LIMIT, TELESCO_MEMORY_LIMIT, etc. in .env to taste.
+    deploy:
+      resources:
+        limits:
+          cpus: "${TELESCO_CPU_LIMIT}"
+          memory: "${TELESCO_MEMORY_LIMIT}"
+        reservations:
+          cpus: "${TELESCO_CPU_RESERVATION}"
+          memory: "${TELESCO_MEMORY_RESERVATION}"
+
+    networks:
+      - server-pi-net
+    labels:
+      - "homepage.group=Astronomy"
+      - "homepage.name=Telesco-pi"
+      - "homepage.icon=telescope.png"
+      - "homepage.href=http://localhost:${TELESCO_PORT}"
+      - "homepage.description=Astronomical instrumentation and astrometry"

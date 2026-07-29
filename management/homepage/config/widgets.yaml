@@ -1,0 +1,16 @@
+# Widgets displayed at the top of the Homepage dashboard
+- resources:
+    backend: resources
+    cpu: true
+    memory: true
+    disk: /
+    label: Host Resources
+    expanded: true
+    cacheInterval: 5000
+
+- datetime:
+    text_size: xl
+    format:
+      timeStyle: short
+      dateStyle: short
+      hour12: false
