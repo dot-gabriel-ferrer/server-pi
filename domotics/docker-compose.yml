@@ -74,7 +74,8 @@ services:
     image: ghcr.io/home-assistant/home-assistant:stable
     container_name: homeassistant
     restart: unless-stopped
-    privileged: true
+    security_opt:
+      - no-new-privileges:true
     # Host networking — mandatory for LAN discovery protocols.
     # Port 8123 (HTTP) is available directly on the host; no port mapping needed.
     network_mode: host
