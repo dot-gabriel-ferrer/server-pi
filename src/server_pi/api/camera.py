@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import subprocess
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from urllib.request import urlretrieve
 
@@ -50,12 +50,12 @@ class CameraService:
         if not files:
             return None, None
         latest = files[-1]
-        ts = datetime.fromtimestamp(latest.stat().st_mtime, tz=timezone.utc)
+        ts = datetime.fromtimestamp(latest.stat().st_mtime, tz=UTC)
         return f"/snapshots/{latest.name}", ts
 
     def capture_snapshot(self) -> EventRecord | None:
         """Capture snapshot and return an error event on failure."""
-        target = self._snapshot_dir / f"{datetime.now(tz=timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.jpg"
+        target = self._snapshot_dir / f"{datetime.now(tz=UTC).strftime('%Y%m%dT%H%M%SZ')}.jpg"
         try:
             if self._snapshot_source_url:
                 urlretrieve(self._snapshot_source_url, target)
@@ -81,7 +81,7 @@ class CameraService:
         except Exception as exc:  # noqa: BLE001
             logger.exception("camera_snapshot_failed")
             return EventRecord(
-                ts=datetime.now(timezone.utc),
+                ts=datetime.now(UTC),
                 zone=self._zone,
                 device_id=self._camera_id,
                 type=EventType.camera,
@@ -95,8 +95,8 @@ class CameraService:
 
     def cleanup_old_snapshots(self) -> None:
         """Remove snapshots older than retention policy."""
-        limit = datetime.now(tz=timezone.utc) - timedelta(days=self._retention_days)
+        limit = datetime.now(tz=UTC) - timedelta(days=self._retention_days)
         for candidate in self._snapshot_dir.glob("*.jpg"):
-            ts = datetime.fromtimestamp(candidate.stat().st_mtime, tz=timezone.utc)
+            ts = datetime.fromtimestamp(candidate.stat().st_mtime, tz=UTC)
             if ts < limit:
                 candidate.unlink(missing_ok=True)

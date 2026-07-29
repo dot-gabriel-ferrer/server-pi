@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -45,7 +45,7 @@ def test_actuator_command_endpoint(tmp_path: Path) -> None:
     response = client.post(
         "/api/v1/actuators/irrigation-main/command",
         json={
-            "ts": datetime.now(timezone.utc).isoformat(),
+            "ts": datetime.now(UTC).isoformat(),
             "zone": "greenhouse",
             "actor": "tester",
             "reason": "manual run",

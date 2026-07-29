@@ -3,19 +3,19 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-class SensorType(str, Enum):
+class SensorType(StrEnum):
     """Supported sensor types."""
 
     ble = "ble"
     zigbee = "zigbee"
 
 
-class EventType(str, Enum):
+class EventType(StrEnum):
     """Event types in the platform."""
 
     irrigation = "irrigation"
@@ -28,7 +28,7 @@ class EventType(str, Enum):
 class SensorReading(BaseModel):
     """Normalized sensor reading payload."""
 
-    model_config = ConfigDict(extra="forbid", strict=True)
+    model_config = ConfigDict(extra="forbid")
 
     ts: datetime
     device_id: str = Field(min_length=1, max_length=120)
@@ -41,14 +41,14 @@ class SensorReading(BaseModel):
     battery_pct: int | None = Field(default=None, ge=0, le=100)
 
 
-class ActuatorMode(str, Enum):
+class ActuatorMode(StrEnum):
     """Actuator operation mode."""
 
     manual = "manual"
     automatic = "automatic"
 
 
-class CommandAction(str, Enum):
+class CommandAction(StrEnum):
     """Allowed actuator command actions."""
 
     on = "on"
@@ -58,7 +58,7 @@ class CommandAction(str, Enum):
 class ActuatorCommandRequest(BaseModel):
     """Actuator command input payload."""
 
-    model_config = ConfigDict(extra="forbid", strict=True)
+    model_config = ConfigDict(extra="forbid")
 
     ts: datetime
     zone: str = Field(min_length=1, max_length=80)
@@ -72,7 +72,7 @@ class ActuatorCommandRequest(BaseModel):
 class ActuatorState(BaseModel):
     """Current actuator state."""
 
-    model_config = ConfigDict(extra="forbid", strict=True)
+    model_config = ConfigDict(extra="forbid")
 
     actuator_id: str
     zone: str
@@ -86,7 +86,7 @@ class ActuatorState(BaseModel):
 class IrrigationRule(BaseModel):
     """Simple irrigation rule."""
 
-    model_config = ConfigDict(extra="forbid", strict=True)
+    model_config = ConfigDict(extra="forbid")
 
     zone: str = Field(min_length=1, max_length=80)
     enabled: bool = True
@@ -118,7 +118,7 @@ class IrrigationRule(BaseModel):
 class EventRecord(BaseModel):
     """Event/audit record."""
 
-    model_config = ConfigDict(extra="forbid", strict=True)
+    model_config = ConfigDict(extra="forbid")
 
     ts: datetime
     zone: str = Field(min_length=1, max_length=80)
@@ -134,7 +134,7 @@ class EventRecord(BaseModel):
 class CameraInfo(BaseModel):
     """Camera stream and snapshot metadata."""
 
-    model_config = ConfigDict(extra="forbid", strict=True)
+    model_config = ConfigDict(extra="forbid")
 
     camera_id: str
     zone: str

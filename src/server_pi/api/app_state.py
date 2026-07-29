@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from server_pi.api.camera import CameraService
 from server_pi.common.models import (
@@ -46,7 +46,7 @@ class AppState:
             zone=zone,
             state=CommandAction.off,
             mode=ActuatorMode.manual,
-            updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(UTC),
             last_actor="system",
             safety_timeout_sec=self.default_timeout_sec,
         )
@@ -61,14 +61,14 @@ class AppState:
             zone=payload.zone,
             state=payload.action,
             mode=payload.mode,
-            updated_at=payload.ts.astimezone(timezone.utc),
+            updated_at=payload.ts.astimezone(UTC),
             last_actor=payload.actor,
             safety_timeout_sec=timeout,
         )
         topic_set = f"cultivo/{payload.zone}/actuator/{actuator_id}/set"
         topic_state = f"cultivo/{payload.zone}/actuator/{actuator_id}/state"
         body = {
-            "ts": payload.ts.astimezone(timezone.utc).isoformat(),
+            "ts": payload.ts.astimezone(UTC).isoformat(),
             "device_id": actuator_id,
             "zone": payload.zone,
             "type": "actuator",
@@ -92,7 +92,11 @@ class AppState:
                 level="info",
                 message=f"actuator {payload.action.value}",
                 actor=payload.actor,
-                metadata={"reason": payload.reason, "mode": payload.mode.value, "duration_sec": timeout},
+                metadata={
+                    "reason": payload.reason,
+                    "mode": payload.mode.value,
+                    "duration_sec": timeout,
+                },
             )
         )
         return state
@@ -102,7 +106,7 @@ class AppState:
         self.state_repo.set_rule(actuator_id, rule)
         self.timeseries.write_event(
             EventRecord(
-                ts=datetime.now(timezone.utc),
+                ts=datetime.now(UTC),
                 zone=rule.zone,
                 device_id=actuator_id,
                 type=EventType.irrigation,
@@ -128,7 +132,7 @@ async def run_periodic_tasks(state: AppState, interval_sec: int = 10) -> None:
     """Execute periodic tasks: rules, failsafe and camera snapshots."""
     while True:
         try:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             _evaluate_rules(state, now)
             event = state.camera.capture_snapshot()
             if event:
@@ -163,7 +167,9 @@ def _evaluate_rules(state: AppState, now: datetime) -> None:
         soil = next((entry for entry in latest if entry.soil_moisture_pct is not None), None)
         if not soil:
             continue
-        decision = state.rule_engine.evaluate(rule, soil, now, state.state_repo.get_last_irrigation(actuator_id))
+        decision = state.rule_engine.evaluate(
+            rule, soil, now, state.state_repo.get_last_irrigation(actuator_id)
+        )
         if not decision.should_start:
             continue
         state.command_actuator(

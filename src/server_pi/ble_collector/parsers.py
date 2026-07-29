@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from hashlib import sha1
 
 from bleak.backends.device import BLEDevice
@@ -40,7 +40,7 @@ class GenericEnvironmentalParser(BleParser):
     def parse(self, device: BLEDevice, ad: AdvertisementData, zone: str) -> ParsedBlePayload | None:
         manufacturer = _parse_manufacturer_data(ad.manufacturer_data)
         payload = {
-            "ts": datetime.now(tz=timezone.utc).isoformat(),
+            "ts": datetime.now(tz=UTC).isoformat(),
             "device_id": device.address.replace(":", "-").lower(),
             "zone": zone,
             "type": "ble",

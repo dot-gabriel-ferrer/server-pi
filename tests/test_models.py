@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -10,7 +10,7 @@ def test_sensor_payload_validation_rejects_unknown_fields() -> None:
     with pytest.raises(ValidationError):
         SensorReading.model_validate(
             {
-                "ts": datetime.now(timezone.utc),
+                "ts": datetime.now(UTC),
                 "device_id": "ble-01",
                 "zone": "greenhouse",
                 "type": SensorType.ble,
@@ -23,7 +23,7 @@ def test_sensor_payload_validation_rejects_unknown_fields() -> None:
 def test_actuator_command_requires_duration_for_on() -> None:
     payload = ActuatorCommandRequest.model_validate(
         {
-            "ts": datetime.now(timezone.utc),
+            "ts": datetime.now(UTC),
             "zone": "greenhouse",
             "actor": "tester",
             "reason": "manual",

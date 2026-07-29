@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from influxdb_client import InfluxDBClient, Point
@@ -57,24 +57,34 @@ class InfluxTimeSeriesRepository(TimeSeriesRepository):
     def write_sensor(self, reading: SensorReading) -> None:
         """Persist a sensor reading as measurement."""
         point = Point("sensor")
-        point = point.tag("device_id", reading.device_id).tag("zone", reading.zone).tag("type", reading.type.value)
+        point = (
+            point.tag("device_id", reading.device_id)
+            .tag("zone", reading.zone)
+            .tag("type", reading.type.value)
+        )
         fields = reading.model_dump()
-        for key in ("temperature_c", "humidity_pct", "soil_moisture_pct", "rssi_dbm", "battery_pct"):
+        for key in (
+            "temperature_c",
+            "humidity_pct",
+            "soil_moisture_pct",
+            "rssi_dbm",
+            "battery_pct",
+        ):
             value = fields.get(key)
             if value is not None:
                 point = point.field(key, value)
-        point = point.time(reading.ts.astimezone(timezone.utc))
+        point = point.time(reading.ts.astimezone(UTC))
         self._write.write(bucket=self._bucket, org=self._org, record=point)
 
     def get_latest_by_zone(self, zone: str) -> list[SensorReading]:
         """Fetch latest state for each sensor in zone."""
-        query = f'''
+        query = f"""
 from(bucket: "{self._bucket}")
   |> range(start: -30d)
   |> filter(fn: (r) => r._measurement == "sensor" and r.zone == "{zone}")
   |> group(columns: ["device_id", "_field"])
   |> last()
-'''
+"""
         tables = self._query.query(query=query, org=self._org)
         by_device: dict[str, dict[str, object]] = defaultdict(dict)
         for table in tables:
@@ -101,12 +111,14 @@ from(bucket: "{self._bucket}")
         aggregate = ""
         if interval:
             aggregate = f"|> aggregateWindow(every: {interval}, fn: mean, createEmpty: false)"
-        query = f'''
+        start_iso = from_ts.astimezone(UTC).isoformat()
+        stop_iso = to_ts.astimezone(UTC).isoformat()
+        query = f"""
 from(bucket: "{self._bucket}")
-  |> range(start: time(v: "{from_ts.astimezone(timezone.utc).isoformat()}"), stop: time(v: "{to_ts.astimezone(timezone.utc).isoformat()}"))
+  |> range(start: time(v: "{start_iso}"), stop: time(v: "{stop_iso}"))
   |> filter(fn: (r) => r._measurement == "sensor" and r.device_id == "{device_id}")
   {aggregate}
-'''
+"""
         tables = self._query.query(query=query, org=self._org)
         by_ts: dict[str, dict[str, object]] = defaultdict(dict)
         for table in tables:
@@ -123,18 +135,22 @@ from(bucket: "{self._bucket}")
     def write_event(self, event: EventRecord) -> None:
         """Persist event entries."""
         point = Point("event")
-        point = point.tag("zone", event.zone).tag("device_id", event.device_id).tag("type", event.type.value)
+        point = (
+            point.tag("zone", event.zone)
+            .tag("device_id", event.device_id)
+            .tag("type", event.type.value)
+        )
         point = point.tag("level", event.level).tag("actor", event.actor)
         point = point.field("message", event.message)
         if event.rule_id:
             point = point.field("rule_id", event.rule_id)
         point = point.field("metadata", json.dumps(event.metadata, sort_keys=True))
-        point = point.time(event.ts.astimezone(timezone.utc))
+        point = point.time(event.ts.astimezone(UTC))
         self._write.write(bucket=self._bucket, org=self._org, record=point)
 
     def get_events(self, limit: int = 200) -> list[EventRecord]:
         """Return most recent events."""
-        query = f'''
+        query = f"""
 from(bucket: "{self._bucket}")
   |> range(start: -30d)
   |> filter(fn: (r) => r._measurement == "event")
@@ -142,7 +158,7 @@ from(bucket: "{self._bucket}")
   |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
   |> sort(columns: ["_time"], desc: true)
   |> limit(n: {limit})
-'''
+"""
         tables = self._query.query(query=query, org=self._org)
         events: list[EventRecord] = []
         for table in tables:
@@ -218,7 +234,9 @@ class StateRepository:
         self._path = path
         self._path.parent.mkdir(parents=True, exist_ok=True)
         if not self._path.exists():
-            self._write_raw({"actuators": {}, "rules": {}, "last_irrigation": {}, "last_telemetry": {}})
+            self._write_raw(
+                {"actuators": {}, "rules": {}, "last_irrigation": {}, "last_telemetry": {}}
+            )
 
     def _read_raw(self) -> dict[str, object]:
         return json.loads(self._path.read_text(encoding="utf-8"))
@@ -262,7 +280,7 @@ class StateRepository:
         data = self._read_raw()
         bucket = data["last_irrigation"]
         assert isinstance(bucket, dict)
-        bucket[actuator_id] = timestamp.astimezone(timezone.utc).isoformat()
+        bucket[actuator_id] = timestamp.astimezone(UTC).isoformat()
         self._write_raw(data)
 
     def get_last_irrigation(self, actuator_id: str) -> datetime | None:
@@ -276,7 +294,7 @@ class StateRepository:
         data = self._read_raw()
         bucket = data["last_telemetry"]
         assert isinstance(bucket, dict)
-        bucket[zone] = timestamp.astimezone(timezone.utc).isoformat()
+        bucket[zone] = timestamp.astimezone(UTC).isoformat()
         self._write_raw(data)
 
     def get_last_telemetry(self, zone: str) -> datetime | None:

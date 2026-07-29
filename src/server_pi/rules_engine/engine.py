@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from server_pi.common.models import IrrigationRule, SensorReading
 
@@ -46,7 +46,11 @@ class IrrigationRuleEngine:
         if reading.soil_moisture_pct >= rule.soil_moisture_threshold_pct:
             return RuleDecision(False, "soil moisture above threshold")
 
-        if not _hour_allowed(now.astimezone(timezone.utc).hour, rule.allowed_start_hour_utc, rule.allowed_end_hour_utc):
+        if not _hour_allowed(
+            now.astimezone(UTC).hour,
+            rule.allowed_start_hour_utc,
+            rule.allowed_end_hour_utc,
+        ):
             return RuleDecision(False, "outside allowed window")
 
         if last_irrigation_at is not None:
@@ -56,7 +60,9 @@ class IrrigationRuleEngine:
 
         return RuleDecision(True, "soil moisture below threshold")
 
-    def telemetry_expired(self, rule: IrrigationRule, now: datetime, last_telemetry_at: datetime | None) -> bool:
+    def telemetry_expired(
+        self, rule: IrrigationRule, now: datetime, last_telemetry_at: datetime | None
+    ) -> bool:
         """Check failsafe timeout for telemetry.
 
         Args:
