@@ -61,6 +61,12 @@ docker compose up -d --build
 curl http://localhost:${API_PORT:-8000}/health
 ```
 
+Portal web mínimo:
+
+```bash
+open http://localhost:${API_PORT:-8000}/
+```
+
 ## Emparejamiento Zigbee y BLE
 
 ### Zigbee
