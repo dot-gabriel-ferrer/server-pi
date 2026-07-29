@@ -35,9 +35,8 @@ server-pi/
 │
 └── astronomy/                        # Astronomical instrumentation & astrometry
     ├── .env
-    ├── docker-compose.yml            # telesco-pi (built from submodule)
-    ├── README.md                     # Submodule integration instructions
-    └── telesco-pi/                   # Git submodule → dot-gabriel-ferrer/telesco-pi
+    ├── docker-compose.yml            # telesco-pi (built from local source)
+    └── README.md                     # Optional local add-on integration instructions
 ```
 
 ---
