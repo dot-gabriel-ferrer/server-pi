@@ -63,7 +63,7 @@ services:
       - "homepage.group=Domotics"
       - "homepage.name=Zigbee2MQTT"
       - "homepage.icon=zigbee2mqtt.png"
-      - "homepage.href=http://localhost:${Z2M_PORT}"
+      - "homepage.href=http://${SERVER_PI_HOST:-raspberrypi.local}:${Z2M_PORT}"
       - "homepage.description=Zigbee gateway and device manager"
 
   # ── Home Assistant ────────────────────────────────────────────────────────────
