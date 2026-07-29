@@ -1,0 +1,14 @@
+homeassistant: false
+permit_join: false
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://mosquitto:1883
+serial:
+  port: /dev/ttyACM0
+frontend:
+  enabled: true
+  port: 8080
+device_options:
+  retain: true
+advanced:
+  log_level: info

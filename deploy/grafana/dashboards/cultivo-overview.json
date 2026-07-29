@@ -1,0 +1,46 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 0,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Temperatura (°C)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {
+          "query": "from(bucket: \"cultivo\") |> range(start: -6h) |> filter(fn: (r) => r._measurement == \"sensor\" and r._field == \"temperature_c\")"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Humedad Suelo (%)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {
+          "query": "from(bucket: \"cultivo\") |> range(start: -6h) |> filter(fn: (r) => r._measurement == \"sensor\" and r._field == \"soil_moisture_pct\")"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Eventos recientes",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+      "targets": [
+        {
+          "query": "from(bucket: \"cultivo\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"event\") |> limit(n: 50)"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["cultivo", "iot"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "utc",
+  "title": "Server Pi Cultivo",
+  "uid": "server-pi-cultivo",
+  "version": 1
+}
