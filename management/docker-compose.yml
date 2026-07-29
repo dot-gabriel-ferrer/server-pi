@@ -32,7 +32,7 @@ services:
       - "${PORTAINER_PORT}:9000"
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock:rw
       - portainer_data:/data
     networks:
       - server-pi-net
