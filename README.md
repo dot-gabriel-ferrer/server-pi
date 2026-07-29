@@ -1,225 +1,195 @@
-# server-pi
+# server-pi local-first IoT platform
 
-Modular microservices infrastructure for a **Raspberry Pi 5** running
-**Raspberry Pi OS Lite 64-bit**, orchestrated with Docker Compose.
+Plataforma IoT **local-first** para domótica y monitorización de cultivo en Raspberry Pi.
 
-Each functional domain lives in its own subdirectory with an independent
-`docker-compose.yml` and `.env` file.  All modules that need to communicate
-share a single external Docker bridge network (`server-pi-net`).
+## Arquitectura (diagrama textual)
 
----
+```text
+[Sensores BLE] --(BLE scan)--> [ble-collector] --MQTT--> [Mosquitto]
+[Sensores Zigbee] --> [Zigbee2MQTT] --MQTT--> [Mosquitto]
 
-## Directory Structure
+[FastAPI API]
+  - suscribe MQTT sensores normalizados
+  - publica comandos actuadores
+  - ejecuta reglas de autoriego
+  - integra cámara RTSP/snapshots
+  - persiste métricas/eventos en InfluxDB
 
-```
-server-pi/
-├── .env                              # Global variables (PUID, PGID, TZ, DATA_DIR)
-│
-├── management/                       # Monitoring & management UI
-│   ├── .env
-│   ├── docker-compose.yml            # Portainer · Glances · Homepage
-│   └── homepage/
-│       └── config/                   # Homepage YAML configuration files
-│           ├── settings.yaml
-│           ├── services.yaml         # Static entries (non-Docker services)
-│           ├── docker.yaml           # Docker auto-discovery via socket
-│           ├── bookmarks.yaml
-│           └── widgets.yaml
-│
-├── domotics/                         # Home automation & plant monitoring
-│   ├── .env
-│   ├── docker-compose.yml            # Mosquitto · Zigbee2MQTT · Home Assistant
-│   └── mosquitto/
-│       └── config/
-│           └── mosquitto.conf
-│
-└── astronomy/                        # Astronomical instrumentation & astrometry
-    ├── .env
-    ├── docker-compose.yml            # telesco-pi (built from local source)
-    └── README.md                     # Optional local add-on integration instructions
+[InfluxDB] <--> [Grafana dashboards provisionados]
 ```
 
----
+## Requisitos hardware/software
 
-## Modules
+- Raspberry Pi 4/5 (recomendado Pi 5)
+- Dongle Zigbee compatible con Zigbee2MQTT
+- Sensores BLE y/o Zigbee de temperatura/humedad/suelo
+- Actuadores conectados mediante relés compatibles (riego/luz/ventilación)
+- Cámara Xiaomi con RTSP local habilitado (si el modelo lo soporta)
+- Docker Engine + Docker Compose plugin
 
-| Module | Services | Key features |
-|--------|----------|-------------|
-| **management** | Portainer, Glances, Homepage | Host metrics (incl. SoC temperature), Docker auto-discovery |
-| **domotics** | Mosquitto, Zigbee2MQTT, Home Assistant | Zigbee coordinator mapped by USB serial ID; HA on host network |
-| **astronomy** | telesco-pi | USB bus access, cgroup device rule, CPU/RAM resource limits |
+## Estructura principal
 
----
+- `docker-compose.yml`: stack principal IoT
+- `src/server_pi/api/`: backend FastAPI
+- `src/server_pi/ble_collector/`: escaneo BLE y publicación MQTT
+- `src/server_pi/rules_engine/`: motor de reglas de riego
+- `src/server_pi/common/`: modelos, configuración y persistencia
+- `deploy/`: configuraciones de mosquitto/zigbee2mqtt/grafana y Dockerfiles
+- `tests/`: pruebas unitarias e integración mínima
+- `docs/TOPICS.md`: convención de tópicos MQTT
+- `docs/DECISIONS.md`: decisiones técnicas y trade-offs
 
-## Prerequisites
+## Instalación rápida
 
-| Requirement | Notes |
-|-------------|-------|
-| Raspberry Pi OS Lite 64-bit | Tested on Pi 5 |
-| Docker Engine ≥ 24 | Installed via the official `get-docker.sh` script |
-| Docker Compose plugin ≥ 2.20 | Bundled with modern Docker Engine |
-| Git ≥ 2.25 | Required for submodule support |
-
----
-
-## Sequential Setup Commands
-
-Run each block **in order** on the Raspberry Pi host.
-
-### Step 1 — Install Docker
+1. Copiar variables de entorno:
 
 ```bash
-# Download and run the official Docker installation script
-curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
-sudo sh /tmp/get-docker.sh
-
-# Add the current user to the docker group (avoids sudo for every docker command)
-sudo usermod -aG docker $USER
-
-# Apply the group change in the current shell session
-newgrp docker
-
-# Verify
-docker version
-docker compose version
+cp .env.example .env
 ```
 
-### Step 2 — Clone this repository
+2. Ajustar `.env` (en especial `ZIGBEE_DEVICE`, `CAMERA_RTSP_URL`, credenciales y puertos).
+
+3. Levantar servicios:
 
 ```bash
-# Clone with submodules in one step
-git clone --recurse-submodules \
-    https://github.com/dot-gabriel-ferrer/server-pi.git
-cd server-pi
+docker compose up -d --build
 ```
 
-### Step 3 — Configure environment variables
+4. Verificar salud:
 
 ```bash
-# Review and edit the root .env (PUID, PGID, TZ, DATA_DIR)
-# Tip: run `id -u` and `id -g` to get your user and group IDs
-nano .env
-
-# Repeat for each module (only override values that differ from the root)
-nano management/.env
-nano domotics/.env
-nano astronomy/.env
+curl http://localhost:${API_PORT:-8000}/health
 ```
 
-### Step 4 — Identify your Zigbee coordinator device
+## Emparejamiento Zigbee y BLE
+
+### Zigbee
+
+1. Abre `http://<host>:${Z2M_PORT:-8080}`.
+2. Activa `permit_join` temporalmente en Zigbee2MQTT.
+3. Empareja dispositivos.
+4. Desactiva `permit_join` al terminar.
+
+### BLE
+
+- `ble-collector` escanea periódicamente y publica en MQTT `cultivo/<zona>/sensor/<device>/state`.
+- Configura:
+  - `BLE_SCAN_INTERVAL_SEC`
+  - `BLE_MIN_PUBLISH_INTERVAL_SEC`
+  - `DEFAULT_ZONE`
+
+## Configuración cámara Xiaomi
+
+- Preferente: `CAMERA_RTSP_URL` con stream RTSP local.
+- Alternativa: `CAMERA_SNAPSHOT_SOURCE_URL` para captura HTTP.
+- Snapshots se guardan en `/data/snapshots` del contenedor API con retención en días.
+
+Endpoint de cámara:
 
 ```bash
-# List USB serial devices by stable ID
-ls -l /dev/serial/by-id/
-
-# Copy the full path of your Zigbee dongle and paste it into domotics/.env:
-#   ZIGBEE_DEVICE=/dev/serial/by-id/usb-Silicon_Labs_Sonoff_Zigbee_3.0_...
-nano domotics/.env
+curl http://localhost:${API_PORT:-8000}/api/v1/camera
 ```
 
-### Step 5 — Create the shared Docker network
+## API disponible
+
+### Health
 
 ```bash
-# This bridge network is declared as external in every docker-compose.yml.
-# It must exist before launching any module.
-docker network create server-pi-net
+curl http://localhost:${API_PORT:-8000}/health
 ```
 
-### Step 6 — Create persistent data directories on the host
+### Últimos sensores por zona
 
 ```bash
-# Read DATA_DIR from the root .env (default: /opt/server-pi)
-DATA_DIR=$(grep '^DATA_DIR=' .env | cut -d= -f2)
-
-sudo mkdir -p \
-    "${DATA_DIR}/portainer" \
-    "${DATA_DIR}/mosquitto/data" \
-    "${DATA_DIR}/mosquitto/log" \
-    "${DATA_DIR}/zigbee2mqtt" \
-    "${DATA_DIR}/homeassistant" \
-    "${DATA_DIR}/telesco-pi"
-
-# Set ownership to the PUID/PGID defined in .env
-PUID=$(grep '^PUID=' .env | cut -d= -f2)
-PGID=$(grep '^PGID=' .env | cut -d= -f2)
-sudo chown -R "${PUID}:${PGID}" "${DATA_DIR}"
+curl "http://localhost:${API_PORT:-8000}/api/v1/sensors/latest?zone=greenhouse"
 ```
 
-### Step 7 — Integrate the telesco-pi submodule (astronomy module)
+### Histórico
 
 ```bash
-# Register and fetch the submodule (skip if you used --recurse-submodules above)
-git submodule add https://github.com/dot-gabriel-ferrer/telesco-pi \
-    astronomy/telesco-pi
-git submodule update --init --recursive
-
-# Optional (only if you're contributing changes back to this repository):
-# git add .gitmodules astronomy/telesco-pi
-# git commit -m "feat(astronomy): add telesco-pi as a git submodule"
+curl "http://localhost:${API_PORT:-8000}/api/v1/sensors/history?device_id=ble-aa-bb&from=2026-07-01T00:00:00Z&to=2026-07-01T23:59:59Z"
 ```
 
-> See [`astronomy/README.md`](astronomy/README.md) for full submodule management
-> instructions (update, troubleshooting, hardware notes).
-
-### Step 8 — Build the astronomy image
+### Comando manual de actuador
 
 ```bash
-# Build the Docker image from the telesco-pi submodule source
-cd astronomy
-docker compose build
-cd ..
+curl -X POST "http://localhost:${API_PORT:-8000}/api/v1/actuators/irrigation-main/command" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "ts":"2026-07-29T12:00:00Z",
+    "zone":"greenhouse",
+    "actor":"operator",
+    "reason":"manual check",
+    "action":"on",
+    "duration_sec":30,
+    "mode":"manual"
+  }'
 ```
 
-### Step 9 — Launch all modules
+### Estado de actuador
 
 ```bash
-# Management (Portainer, Glances, Homepage)
-cd management && docker compose up -d && cd ..
-
-# Domotics (Mosquitto, Zigbee2MQTT, Home Assistant)
-cd domotics && docker compose up -d && cd ..
-
-# Astronomy (telesco-pi)
-cd astronomy && docker compose up -d && cd ..
+curl "http://localhost:${API_PORT:-8000}/api/v1/actuators/irrigation-main/state?zone=greenhouse"
 ```
 
-### Step 10 — Verify
+### Crear/actualizar regla de riego
 
 ```bash
-# Check all running containers across modules
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-
-# Tail logs for a specific service (replace <name> with portainer, glances, etc.)
-docker logs -f <name>
+curl -X POST "http://localhost:${API_PORT:-8000}/api/v1/rules/irrigation?actuator_id=irrigation-main" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "zone":"greenhouse",
+    "enabled":true,
+    "soil_moisture_threshold_pct":35,
+    "allowed_start_hour_utc":5,
+    "allowed_end_hour_utc":11,
+    "cooldown_minutes":180,
+    "max_duration_sec":60,
+    "telemetry_timeout_minutes":15
+  }'
 ```
 
----
-
-## Service URLs (default ports)
-
-| Service | URL |
-|---------|-----|
-| Homepage | http://\<pi-ip\>:3000 |
-| Portainer | http://\<pi-ip\>:9000 |
-| Glances | http://\<pi-ip\>:61208 |
-| Zigbee2MQTT | http://\<pi-ip\>:8080 |
-| Home Assistant | http://\<pi-ip\>:8123 |
-| telesco-pi | http://\<pi-ip\>:5000 |
-
----
-
-## Updating a module
+### Eventos
 
 ```bash
-cd <module-directory>
-docker compose pull          # pull latest images
-docker compose up -d         # recreate containers with new images
+curl "http://localhost:${API_PORT:-8000}/api/v1/events?limit=100"
 ```
 
-## Stopping everything
+## Seguridad mínima operativa implementada
+
+- Actuadores en `OFF` por defecto al reinicio (estado persistido con inicialización segura).
+- Timeout de seguridad por activación (`duration_sec` y `ACTUATOR_DEFAULT_TIMEOUT_SEC`).
+- Validación estricta de payloads con Pydantic (`extra=forbid`, tipos estrictos).
+- Persistencia y timestamps en UTC.
+- Failsafe de telemetría en motor de reglas (autoapagado si expira señal crítica).
+
+## Dashboards/Grafana
+
+- Grafana provisionado automáticamente con datasource InfluxDB.
+- Dashboard inicial: `Server Pi Cultivo`.
+- Objetivo mínimo: tiempo real + histórico + eventos.
+
+## Testing y calidad
 
 ```bash
-for module in management domotics astronomy; do
-    cd $module && docker compose down && cd ..
-done
+python -m pip install -e .[dev]
+ruff check src tests
+black --check src tests
+pytest
 ```
+
+## Troubleshooting
+
+- `api` no conecta MQTT: revisar `MQTT_HOST`, `MQTT_PORT` y logs de `mosquitto`.
+- Sin datos BLE: verificar permisos Bluetooth en host y disponibilidad de adaptador.
+- Sin datos Zigbee: validar `ZIGBEE_DEVICE` y estado del dongle USB.
+- Snapshot fallido: revisar disponibilidad de `ffmpeg` o URL HTTP configurada.
+- Grafana sin métricas: comprobar bucket/token/org de InfluxDB.
+
+## Consideraciones de seguridad eléctrica (actuadores)
+
+- Usa relés con aislamiento óptico y fuente de alimentación adecuada.
+- Añade fusibles y protecciones térmicas en bombas/motores.
+- Mantén cableado de potencia separado de señal.
+- Define parada física de emergencia independiente del software.
+- Prueba en vacío antes de conectar cargas reales.

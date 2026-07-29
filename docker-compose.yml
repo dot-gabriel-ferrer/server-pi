@@ -1,0 +1,182 @@
+name: server-pi-iot
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: sp_mosquitto
+    restart: unless-stopped
+    ports:
+      - "${MQTT_PORT:-1883}:1883"
+      - "${MQTT_WS_PORT:-9001}:9001"
+    volumes:
+      - ./deploy/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h 127.0.0.1 -p 1883 -t '$$SYS/broker/uptime' -C 1 -W 3 > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - iot-net
+
+  zigbee2mqtt:
+    image: koenkk/zigbee2mqtt:latest
+    container_name: sp_zigbee2mqtt
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    ports:
+      - "${Z2M_PORT:-8080}:8080"
+    environment:
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ./deploy/zigbee2mqtt/configuration.yaml:/app/data/configuration.yaml
+      - zigbee2mqtt-data:/app/data
+    devices:
+      - "${ZIGBEE_DEVICE:-/dev/ttyACM0}:/dev/ttyACM0"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - iot-net
+
+  influxdb:
+    image: influxdb:2.7
+    container_name: sp_influxdb
+    restart: unless-stopped
+    ports:
+      - "${INFLUXDB_PORT:-8086}:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_USERNAME:-admin}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_PASSWORD:-changeme123}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG:-server-pi}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET:-cultivo}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN:-server-pi-token}
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    networks:
+      - iot-net
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: sp_grafana
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health | grep -q ok"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - iot-net
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/api/Dockerfile
+    container_name: sp_api
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+    environment:
+      - TZ=${TZ:-UTC}
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=${MQTT_USERNAME:-}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:-}
+      - INFLUX_URL=http://influxdb:8086
+      - INFLUX_TOKEN=${INFLUXDB_TOKEN:-server-pi-token}
+      - INFLUX_ORG=${INFLUXDB_ORG:-server-pi}
+      - INFLUX_BUCKET=${INFLUXDB_BUCKET:-cultivo}
+      - DEFAULT_ZONE=${DEFAULT_ZONE:-greenhouse}
+      - ACTUATOR_DEFAULT_TIMEOUT_SEC=${ACTUATOR_DEFAULT_TIMEOUT_SEC:-120}
+      - CAMERA_ID=${CAMERA_ID:-xiaomi-main}
+      - CAMERA_ZONE=${CAMERA_ZONE:-greenhouse}
+      - CAMERA_RTSP_URL=${CAMERA_RTSP_URL:-}
+      - CAMERA_SNAPSHOT_SOURCE_URL=${CAMERA_SNAPSHOT_SOURCE_URL:-}
+      - CAMERA_SNAPSHOT_ENABLED=${CAMERA_SNAPSHOT_ENABLED:-false}
+      - CAMERA_SNAPSHOT_INTERVAL_SEC=${CAMERA_SNAPSHOT_INTERVAL_SEC:-300}
+      - CAMERA_SNAPSHOT_RETENTION_DAYS=${CAMERA_SNAPSHOT_RETENTION_DAYS:-30}
+      - CAMERA_SNAPSHOT_DIR=/data/snapshots
+      - STATE_FILE=/data/state/state.json
+    volumes:
+      - api-data:/data
+    ports:
+      - "${API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/health | grep -q ok"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - iot-net
+
+  ble-collector:
+    build:
+      context: .
+      dockerfile: deploy/ble-collector/Dockerfile
+    container_name: sp_ble_collector
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      - TZ=${TZ:-UTC}
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=${MQTT_USERNAME:-}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:-}
+      - DEFAULT_ZONE=${DEFAULT_ZONE:-greenhouse}
+      - BLE_SCAN_INTERVAL_SEC=${BLE_SCAN_INTERVAL_SEC:-10}
+      - BLE_MIN_PUBLISH_INTERVAL_SEC=${BLE_MIN_PUBLISH_INTERVAL_SEC:-30}
+    network_mode: host
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'server_pi.ble_collector.main' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+networks:
+  iot-net:
+    driver: bridge
+
+volumes:
+  mosquitto-data:
+  mosquitto-log:
+  zigbee2mqtt-data:
+  influxdb-data:
+  influxdb-config:
+  grafana-data:
+  api-data:
