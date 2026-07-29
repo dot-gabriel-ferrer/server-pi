@@ -4,5 +4,5 @@
 - Infrastructure:
     - Raspberry Pi Host:
         icon: raspberrypi.png
-        href: "http://localhost:${GLANCES_PORT:-61208}"
+        href: "http://${PI_HOST:-raspberrypi.local}:${GLANCES_PORT:-61208}"
         description: Host metrics — Glances web UI
