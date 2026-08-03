@@ -2,6 +2,20 @@
 
 Plataforma IoT **local-first** para domótica y monitorización de cultivo en Raspberry Pi.
 
+## Capturas de pantalla
+
+### Panel principal — vista general
+
+![Dashboard general](docs/screenshots/dashboard.svg)
+
+*Vista completa: sensores en tiempo real con barras de progreso y estado, control del actuador de riego con selector de duración, regla de autoriego configurable inline, gráfico histórico de las últimas 2 horas y log de eventos.*
+
+### Sensores y control de actuador
+
+![Sensores y actuador](docs/screenshots/sensors-actuator.svg)
+
+*Detalle de las tarjetas de sensores (temperatura, humedad ambiental, humedad de suelo y batería) con indicador de estado de señal en tiempo real, y panel de control del actuador con selector de duración variable.*
+
 ## Arquitectura (diagrama textual)
 
 ```text
@@ -61,11 +75,13 @@ docker compose up -d --build
 curl http://localhost:${API_PORT:-8000}/health
 ```
 
-Portal web mínimo:
+Portal web:
 
 ```bash
 open http://localhost:${API_PORT:-8000}/
 ```
+
+El portal incluye: selector de zona, badge de salud del sistema, sensores con barras de progreso e indicador de señal, control de riego con selector de duración, configuración inline de regla de autoriego, gráfico histórico y log de eventos.
 
 ## Emparejamiento Zigbee y BLE
 
@@ -153,6 +169,12 @@ curl -X POST "http://localhost:${API_PORT:-8000}/api/v1/rules/irrigation?actuato
     "max_duration_sec":60,
     "telemetry_timeout_minutes":15
   }'
+```
+
+### Consultar regla de riego activa
+
+```bash
+curl "http://localhost:${API_PORT:-8000}/api/v1/rules/irrigation?actuator_id=irrigation-main"
 ```
 
 ### Eventos
