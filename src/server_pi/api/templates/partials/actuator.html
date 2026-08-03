@@ -1,0 +1,51 @@
+<div
+  id="actuator-card"
+  hx-get="/ui/partials/actuator?actuator_id={{ actuator_id }}&zone={{ zone }}"
+  hx-trigger="every 10s"
+  hx-target="this"
+  hx-swap="outerHTML"
+  class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+  <h2 class="font-semibold mb-3">💧 Actuador — {{ actuator_id }}</h2>
+
+  <div class="flex items-center gap-3 mb-4">
+    <span class="text-3xl font-extrabold tracking-tight {% if state.state.value == 'on' %}text-green-400{% else %}text-red-400{% endif %}">
+      {{ state.state.value | upper }}
+    </span>
+    <span class="text-xs text-gray-400 px-2 py-0.5 rounded bg-gray-800 font-mono">{{ state.mode.value }}</span>
+  </div>
+
+  <dl class="text-sm space-y-1.5 text-gray-400 mb-5">
+    <div class="flex justify-between">
+      <dt>Último cambio</dt>
+      <dd class="text-gray-300 font-mono text-xs">{{ state.updated_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</dd>
+    </div>
+    <div class="flex justify-between">
+      <dt>Actor</dt>
+      <dd class="text-gray-300">{{ state.last_actor }}</dd>
+    </div>
+    <div class="flex justify-between">
+      <dt>Timeout</dt>
+      <dd class="text-gray-300">{{ state.safety_timeout_sec }} s</dd>
+    </div>
+  </dl>
+
+  <div class="flex gap-2">
+    <button
+      hx-post="/ui/actuators/{{ actuator_id }}/on?zone={{ zone }}&duration_sec=30"
+      hx-target="#actuator-card"
+      hx-swap="outerHTML"
+      hx-confirm="¿Activar riego manual por 30 segundos?"
+      class="flex-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      {% if state.state.value == 'on' %}disabled{% endif %}>
+      ▶ Riego 30 s
+    </button>
+    <button
+      hx-post="/ui/actuators/{{ actuator_id }}/off?zone={{ zone }}"
+      hx-target="#actuator-card"
+      hx-swap="outerHTML"
+      class="flex-1 bg-red-700 hover:bg-red-800 active:bg-red-900 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      {% if state.state.value == 'off' %}disabled{% endif %}>
+      ■ Parar
+    </button>
+  </div>
+</div>

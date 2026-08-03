@@ -83,8 +83,17 @@ class ActuatorState(BaseModel):
     safety_timeout_sec: int = Field(ge=1, le=3600)
 
 
+class WeatherCondition(BaseModel):
+    """Optional ambient/weather gate for multi-condition irrigation rules."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    max_ambient_temp_c: float | None = Field(default=None, ge=-20, le=60)
+    min_ambient_humidity_pct: float | None = Field(default=None, ge=0, le=100)
+
+
 class IrrigationRule(BaseModel):
-    """Simple irrigation rule."""
+    """Multi-condition irrigation rule."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -96,6 +105,8 @@ class IrrigationRule(BaseModel):
     cooldown_minutes: int = Field(ge=1, le=24 * 60)
     max_duration_sec: int = Field(ge=1, le=3600)
     telemetry_timeout_minutes: int = Field(ge=1, le=24 * 60)
+    weather: WeatherCondition = Field(default_factory=WeatherCondition)
+    temp_sensor_device_id: str | None = None
 
     @field_validator("allowed_end_hour_utc")
     @classmethod

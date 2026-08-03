@@ -1,0 +1,33 @@
+<div
+  hx-get="/ui/partials/camera"
+  hx-trigger="every 30s"
+  hx-target="this"
+  hx-swap="outerHTML"
+  class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+  <h2 class="font-semibold mb-3">📷 Cámara — {{ camera.zone }}</h2>
+
+  {% if camera.stream_url %}
+  <a href="{{ camera.stream_url }}" target="_blank" rel="noopener noreferrer"
+     class="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 text-sm mb-3 transition-colors">
+    ▶ Abrir stream RTSP
+  </a>
+  {% else %}
+  <p class="text-gray-500 text-xs mb-3">Sin stream RTSP configurado.</p>
+  {% endif %}
+
+  {% if camera.latest_snapshot_url %}
+  <img
+    src="{{ camera.latest_snapshot_url }}?t={{ now_ts }}"
+    alt="Último snapshot"
+    class="w-full rounded-lg border border-gray-700 object-cover" />
+  {% if camera.latest_snapshot_ts %}
+  <p class="text-xs text-gray-500 mt-2">
+    Snapshot: {{ camera.latest_snapshot_ts.strftime('%Y-%m-%d %H:%M:%S') }} UTC
+  </p>
+  {% endif %}
+  {% else %}
+  <div class="w-full h-40 flex items-center justify-center bg-gray-800 rounded-lg border border-gray-700">
+    <p class="text-gray-500 text-sm">Sin snapshot disponible</p>
+  </div>
+  {% endif %}
+</div>

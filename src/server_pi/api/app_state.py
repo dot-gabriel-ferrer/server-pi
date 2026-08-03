@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -113,7 +114,7 @@ class AppState:
                 level="info",
                 message="irrigation rule updated",
                 actor="api",
-                metadata=rule.model_dump(mode="json"),
+                metadata=_rule_to_flat_metadata(rule),
             )
         )
         return rule
@@ -142,6 +143,20 @@ async def run_periodic_tasks(state: AppState, interval_sec: int = 10) -> None:
         await asyncio.sleep(interval_sec)
 
 
+def _rule_to_flat_metadata(rule: IrrigationRule) -> dict[str, str | int | float | bool | None]:
+    """Flatten rule fields for InfluxDB-compatible EventRecord metadata.
+
+    Nested objects (e.g. WeatherCondition) are serialised as JSON strings.
+    """
+    result: dict[str, str | int | float | bool | None] = {}
+    for key, value in rule.model_dump(mode="json").items():
+        if isinstance(value, dict):
+            result[key] = json.dumps(value, sort_keys=True)
+        else:
+            result[key] = value  # type: ignore[assignment]
+    return result
+
+
 def _evaluate_rules(state: AppState, now: datetime) -> None:
     for actuator_id in ["irrigation-main"]:
         rule = state.state_repo.get_rule(actuator_id)
@@ -167,8 +182,17 @@ def _evaluate_rules(state: AppState, now: datetime) -> None:
         soil = next((entry for entry in latest if entry.soil_moisture_pct is not None), None)
         if not soil:
             continue
+        ambient = None
+        if rule.temp_sensor_device_id:
+            ambient = next(
+                (e for e in latest if e.device_id == rule.temp_sensor_device_id), None
+            )
         decision = state.rule_engine.evaluate(
-            rule, soil, now, state.state_repo.get_last_irrigation(actuator_id)
+            rule,
+            soil,
+            now,
+            state.state_repo.get_last_irrigation(actuator_id),
+            ambient_reading=ambient,
         )
         if not decision.should_start:
             continue

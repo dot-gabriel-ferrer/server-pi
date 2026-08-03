@@ -1,0 +1,45 @@
+<div
+  hx-get="/ui/partials/sensors?zone={{ zone }}"
+  hx-trigger="every 10s"
+  hx-target="this"
+  hx-swap="outerHTML"
+  class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+  <h2 class="font-semibold mb-3">🌡️ Sensores — {{ zone }}</h2>
+  {% if readings %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-gray-400 border-b border-gray-700 text-xs">
+          <th class="text-left pb-2 pr-2">Dispositivo</th>
+          <th class="text-right pb-2 pr-2">Temp °C</th>
+          <th class="text-right pb-2 pr-2">Hum %</th>
+          <th class="text-right pb-2 pr-2">Suelo %</th>
+          <th class="text-right pb-2">Bat %</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in readings %}
+        <tr class="border-b border-gray-800 hover:bg-gray-800 transition-colors">
+          <td class="py-2 pr-2 font-mono text-xs text-gray-300 truncate max-w-[12rem]">{{ r.device_id }}</td>
+          <td class="py-2 pr-2 text-right {% if r.temperature_c is not none %}text-orange-400{% else %}text-gray-600{% endif %}">
+            {% if r.temperature_c is not none %}{{ "%.1f"|format(r.temperature_c) }}{% else %}—{% endif %}
+          </td>
+          <td class="py-2 pr-2 text-right {% if r.humidity_pct is not none %}text-blue-400{% else %}text-gray-600{% endif %}">
+            {% if r.humidity_pct is not none %}{{ "%.1f"|format(r.humidity_pct) }}{% else %}—{% endif %}
+          </td>
+          <td class="py-2 pr-2 text-right {% if r.soil_moisture_pct is not none %}text-green-400{% else %}text-gray-600{% endif %}">
+            {% if r.soil_moisture_pct is not none %}{{ "%.1f"|format(r.soil_moisture_pct) }}{% else %}—{% endif %}
+          </td>
+          <td class="py-2 text-right text-gray-400">
+            {% if r.battery_pct is not none %}{{ r.battery_pct }}{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-gray-500 text-sm">Sin lecturas para la zona <em>{{ zone }}</em>.</p>
+  {% endif %}
+  <p class="text-xs text-gray-600 mt-3">Actualizado: {{ now.strftime('%H:%M:%S') }} UTC</p>
+</div>
