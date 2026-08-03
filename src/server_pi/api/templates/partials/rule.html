@@ -8,7 +8,7 @@
   class="sp-card p-5"
   x-data="{ showSaved: {{ 'true' if saved else 'false' }}, openEdit: false, openCreate: false }"
   x-init="if (showSaved) { setTimeout(() => showSaved = false, 3000) }">
-  <div x-show="showSaved" x-transition.opacity.duration.300ms class="mb-4 rounded-[12px] border border-[rgba(52,208,88,0.3)] bg-[rgba(52,208,88,0.08)] px-3 py-2 text-sm text-[var(--sp-ok)]">
+  <div x-show="showSaved" x-transition.opacity.duration.300ms role="alert" class="mb-4 rounded-[12px] border border-[rgba(52,208,88,0.3)] bg-[rgba(52,208,88,0.08)] px-3 py-2 text-sm text-[var(--sp-ok)]">
     Rule saved successfully.
   </div>
 
@@ -53,7 +53,7 @@
     </div>
   </div>
 
-  <button type="button" class="sp-btn w-full" @click="openEdit = !openEdit">Edit rule</button>
+  <button type="button" class="sp-btn w-full" @click="openEdit = !openEdit" :aria-expanded="openEdit.toString()">Edit rule</button>
   <form
     x-show="openEdit"
     x-transition.opacity.duration.200ms
@@ -105,7 +105,7 @@
     No irrigation rule configured for this actuator.
   </div>
 
-  <button type="button" class="sp-btn w-full" @click="openCreate = !openCreate">Create rule</button>
+  <button type="button" class="sp-btn w-full" @click="openCreate = !openCreate" :aria-expanded="openCreate.toString()">Create rule</button>
   <form
     x-show="openCreate"
     x-transition.opacity.duration.200ms

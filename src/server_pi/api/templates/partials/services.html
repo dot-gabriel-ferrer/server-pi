@@ -19,7 +19,8 @@
     {% set status = service.status | lower %}
     <div
       class="rounded-[14px] border border-[var(--sp-border)] bg-[rgba(255,255,255,0.01)] px-4 py-4"
-      x-data="{ loading: '' }">
+      x-data="{ loading: '' }"
+      :aria-busy="(loading !== '').toString()">
       <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div class="min-w-0">
           <p class="sp-mono text-[var(--sp-t1)]">{{ service.name }}</p>
@@ -48,6 +49,7 @@
               x-on:click="loading = '{{ action }}'"
               hx-post="/api/v1/services/{{ service.name }}/{{ action }}"
               hx-swap="none"
+              aria-label="{{ action | capitalize }} {{ service.name }}"
               hx-on::after-request="loading=''; htmx.trigger(document.getElementById('services-panel'), 'refresh')">
               {{ action | capitalize }}
             </button>
@@ -58,9 +60,13 @@
     </div>
     {% endfor %}
   </div>
+  {% elif docker_available %}
+  <div class="rounded-[14px] border border-dashed border-[var(--sp-border-hi)] px-4 py-8 text-center text-sm text-[var(--sp-t2)]">
+    No services detected.
+  </div>
   {% else %}
   <div class="rounded-[14px] border border-dashed border-[var(--sp-border-hi)] px-4 py-8 text-center text-sm text-[var(--sp-t2)]">
-    Docker socket not available
+    Docker socket unavailable — service management requires Docker to be running.
   </div>
   {% endif %}
 </div>

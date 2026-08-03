@@ -4,6 +4,7 @@
   hx-trigger="every 10s"
   hx-target="this"
   hx-swap="outerHTML"
+  aria-live="polite"
   class="sp-card p-5"
   x-data="{
     endsAt: {% if state.state.value == 'on' %}{{ (state.updated_at.timestamp() + state.safety_timeout_sec) | int }}{% else %}null{% endif %},
@@ -61,7 +62,8 @@
   </dl>
 
   <div class="space-y-4">
-    <label class="block">
+    <div class="block">
+      <label for="dur-{{ actuator_id }}" class="sr-only">Duration</label>
       <span class="sp-metric-lbl">Duration</span>
       <select id="dur-{{ actuator_id }}" name="duration_sec"
         class="mt-2 w-full rounded-[10px] border border-[var(--sp-border)] bg-[var(--sp-overlay)] px-3 py-2 text-sm text-[var(--sp-t1)] focus:border-[var(--sp-border-hi)] focus:outline-none">
@@ -70,7 +72,7 @@
         <option value="120">2 min</option>
         <option value="300">5 min</option>
       </select>
-    </label>
+    </div>
 
     <div class="grid grid-cols-2 gap-3">
       <button
@@ -79,6 +81,7 @@
         hx-target="#actuator-card"
         hx-swap="outerHTML"
         hx-confirm="Start manual irrigation for the selected duration?"
+        aria-label="Activate irrigation for {{ actuator_id }}"
         class="{% if state.state.value == 'off' %}sp-btn-accent{% else %}sp-btn{% endif %} w-full py-2 disabled:cursor-not-allowed disabled:opacity-40"
         {% if state.state.value == 'on' %}disabled{% endif %}>
         Start
@@ -87,8 +90,9 @@
         hx-post="/ui/actuators/{{ actuator_id }}/off?zone={{ zone }}"
         hx-target="#actuator-card"
         hx-swap="outerHTML"
+        aria-label="Stop irrigation for {{ actuator_id }}"
         class="sp-btn w-full py-2 disabled:cursor-not-allowed disabled:opacity-40"
-        style="border-color: {% if state.state.value == 'on' %}rgba(255,95,87,0.4){% else %}var(--sp-border){% endif %}; color: {% if state.state.value == 'on' %}var(--sp-err){% else %}var(--sp-t2){% endif %};"
+        style="border-color: {% if state.state.value == 'on' %}color-mix(in srgb, var(--sp-err) 40%, var(--sp-border)){% else %}var(--sp-border){% endif %}; color: {% if state.state.value == 'on' %}var(--sp-err){% else %}var(--sp-t2){% endif %};"
         {% if state.state.value == 'off' %}disabled{% endif %}>
         Stop
       </button>

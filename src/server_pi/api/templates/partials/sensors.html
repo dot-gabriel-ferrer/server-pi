@@ -4,6 +4,8 @@
   hx-trigger="every 10s"
   hx-target="this"
   hx-swap="outerHTML"
+  aria-live="polite"
+  aria-label="Sensor status for {{ zone|replace('-', ' ') }}"
   class="space-y-3">
   <div class="flex items-start justify-between gap-4">
     <div>
@@ -30,6 +32,7 @@
   hx-trigger="every 10s"
   hx-target="this"
   hx-swap="outerHTML"
+  aria-live="polite"
   class="sp-card p-5">
   <div class="mb-5 flex items-start justify-between gap-4">
     <div>
