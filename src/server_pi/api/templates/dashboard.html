@@ -1,232 +1,377 @@
-<!doctype html>
-<html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Server Pi — Cultivo Local-First</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-    <style>
-      [hx-get][hx-trigger]:not([data-loaded]) { transition: opacity 0.2s; }
-      details > summary { list-style: none; }
-      details > summary::-webkit-details-marker { display: none; }
-    </style>
-  </head>
-  <body class="bg-gray-950 text-gray-100 min-h-screen">
+{% extends "base.html" %}
+{% set initial_zone = request.query_params.get('zone', 'greenhouse') %}
+{% set actuator_id = 'irrigation-main' %}
 
-    <!-- Top bar -->
-    <header class="sticky top-0 z-20 bg-gray-950/95 backdrop-blur border-b border-gray-800 px-4 md:px-6 py-3 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-3 min-w-0">
-        <h1 class="text-lg font-bold tracking-tight whitespace-nowrap">🌱 Server Pi</h1>
-        <span class="hidden sm:block text-gray-500 text-sm truncate">Plataforma IoT local-first</span>
+{% block title %}Server Pi Dashboard{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+  .sp-dashboard-tab,
+  .sp-chart-toggle,
+  .sp-range-btn {
+    position: relative;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--sp-t2);
+    padding: 0.75rem 0.25rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .sp-dashboard-tab:hover,
+  .sp-chart-toggle:hover,
+  .sp-range-btn:hover {
+    color: var(--sp-t1);
+  }
+
+  .sp-chart-toggle {
+    transition: opacity 0.15s ease-out, color 0.15s ease-out, border-color 0.15s ease-out;
+  }
+
+  .sp-chart-toggle.is-active {
+    color: var(--sp-t1);
+    border-bottom-color: currentColor;
+  }
+
+  .sp-chart-toggle.is-inactive {
+    opacity: 0.4;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sp-chart-toggle {
+      transition: none;
+    }
+  }
+
+  .sp-chart-shell {
+    position: relative;
+    min-height: 280px;
+  }
+
+  .sp-chart-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--sp-border-hi);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.01);
+    color: var(--sp-t2);
+    font-size: 0.875rem;
+    text-align: center;
+    pointer-events: none;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="dashboardPage()" x-init="init()" class="space-y-6">
+  <section class="sp-card px-5 py-4 sm:px-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p class="sp-section-title mb-2">Zone selector</p>
+        <h1 class="text-2xl font-semibold tracking-[-0.02em] text-[var(--sp-t1)]">IoT operations dashboard</h1>
       </div>
-
-      <div class="flex items-center gap-3">
-        <!-- Zone selector -->
-        <div class="flex items-center gap-2">
-          <label for="zone-select" class="text-xs text-gray-500 whitespace-nowrap">Zona:</label>
-          <select id="zone-select"
-            onchange="setZone(this.value)"
-            class="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
-            <option value="greenhouse">greenhouse</option>
-            <option value="garden">garden</option>
-            <option value="indoor">indoor</option>
-          </select>
-        </div>
-
-        <!-- Health badge -->
-        <span id="health-badge"
-          class="text-xs px-2 py-0.5 rounded-full font-semibold bg-gray-800 text-gray-500">
-          ···
-        </span>
-
-        <!-- UTC clock -->
-        <span id="clock" class="text-xs text-gray-500 font-mono hidden md:block"></span>
+      <div class="flex flex-wrap items-center gap-6 border-b border-[var(--sp-border)]">
+        <button type="button" class="sp-dashboard-tab" @click="setZone('greenhouse')"
+          :style="zone === 'greenhouse' ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">
+          Greenhouse
+        </button>
+        <button type="button" class="sp-dashboard-tab" @click="setZone('garden')"
+          :style="zone === 'garden' ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">
+          Garden
+        </button>
+        <button type="button" class="sp-dashboard-tab" @click="setZone('indoor')"
+          :style="zone === 'indoor' ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">
+          Indoor
+        </button>
       </div>
-    </header>
+    </div>
+  </section>
 
-    <main class="p-4 md:p-6">
-      <div id="grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+    <div
+      id="sensors-slot"
+      class="sp-card p-5 lg:col-span-4"
+      hx-get="/ui/partials/sensors?zone={{ initial_zone }}"
+      hx-trigger="load, every 10s"
+      hx-target="this"
+      hx-swap="outerHTML">
+      <p class="text-sm text-[var(--sp-t2)]">Loading sensors…</p>
+    </div>
 
-        <!-- Sensores en tiempo real (HTMX polling) -->
-        <div id="sensors-slot"
-          hx-get="/ui/partials/sensors?zone=greenhouse"
-          hx-trigger="load, every 10s"
-          hx-target="this"
-          hx-swap="outerHTML"
-          class="bg-gray-900 rounded-xl border border-gray-800 p-4">
-          <p class="text-gray-500 text-sm animate-pulse">Cargando sensores…</p>
+    <div
+      id="actuator-card"
+      class="sp-card p-5 lg:col-span-4"
+      hx-get="/ui/partials/actuator?actuator_id={{ actuator_id }}&zone={{ initial_zone }}"
+      hx-trigger="load, every 10s"
+      hx-target="this"
+      hx-swap="outerHTML">
+      <p class="text-sm text-[var(--sp-t2)]">Loading actuator…</p>
+    </div>
+
+    <div
+      id="rule-card"
+      class="sp-card p-5 lg:col-span-4"
+      hx-get="/ui/partials/rule?actuator_id={{ actuator_id }}&zone={{ initial_zone }}"
+      hx-trigger="load, every 30s"
+      hx-target="this"
+      hx-swap="outerHTML">
+      <p class="text-sm text-[var(--sp-t2)]">Loading rule…</p>
+    </div>
+
+    <section class="sp-card p-5 lg:col-span-8">
+      <div class="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <p class="sp-section-title mb-2">Historical telemetry</p>
+          <h2 class="text-lg font-semibold text-[var(--sp-t1)]">Zone trends</h2>
         </div>
-
-        <!-- Actuador de riego (HTMX polling) -->
-        <div
-          id="actuator-card"
-          hx-get="/ui/partials/actuator?actuator_id=irrigation-main&zone=greenhouse"
-          hx-trigger="load, every 10s"
-          hx-target="this"
-          hx-swap="outerHTML"
-          class="bg-gray-900 rounded-xl border border-gray-800 p-4">
-          <p class="text-gray-500 text-sm animate-pulse">Cargando actuador…</p>
-        </div>
-
-        <!-- Regla de riego (HTMX polling) -->
-        <div
-          id="rule-card"
-          hx-get="/ui/partials/rule?actuator_id=irrigation-main"
-          hx-trigger="load, every 30s"
-          hx-target="this"
-          hx-swap="outerHTML"
-          class="bg-gray-900 rounded-xl border border-gray-800 p-4">
-          <p class="text-gray-500 text-sm animate-pulse">Cargando regla…</p>
-        </div>
-
-        <!-- Gráfico histórico Chart.js (últimas 2 h) -->
-        <div class="lg:col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-4">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="font-semibold">📈 Histórico últimas 2 h</h2>
-            <button onclick="loadHistChart()" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">↻ Actualizar</button>
+        <div class="flex flex-col gap-3">
+          <div class="flex flex-wrap items-center gap-4 border-b border-[var(--sp-border)]">
+            <button type="button" class="sp-chart-toggle" :class="series.temperature ? 'is-active' : 'is-inactive'" @click="toggleSeries('temperature')"
+              :style="series.temperature ? 'color: var(--sp-t1); border-bottom-color: var(--sp-warn);' : ''">
+              Temperature
+            </button>
+            <button type="button" class="sp-chart-toggle" :class="series.humidity ? 'is-active' : 'is-inactive'" @click="toggleSeries('humidity')"
+              :style="series.humidity ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">
+              Humidity
+            </button>
+            <button type="button" class="sp-chart-toggle" :class="series.soil ? 'is-active' : 'is-inactive'" @click="toggleSeries('soil')"
+              :style="series.soil ? 'color: var(--sp-t1); border-bottom-color: var(--sp-ok);' : ''">
+              Soil Moisture
+            </button>
           </div>
-          <canvas id="histChart" height="90"></canvas>
-          <p id="hist-empty" class="hidden text-gray-500 text-sm text-center py-6">Sin datos históricos disponibles.</p>
+          <div class="flex flex-wrap items-center gap-4 border-b border-[var(--sp-border)]">
+            <button type="button" class="sp-range-btn" @click="setRange(1)"
+              :style="hoursBack === 1 ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">1h</button>
+            <button type="button" class="sp-range-btn" @click="setRange(2)"
+              :style="hoursBack === 2 ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">2h</button>
+            <button type="button" class="sp-range-btn" @click="setRange(6)"
+              :style="hoursBack === 6 ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">6h</button>
+            <button type="button" class="sp-range-btn" @click="setRange(24)"
+              :style="hoursBack === 24 ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">24h</button>
+          </div>
         </div>
-
-        <!-- Cámara (HTMX polling) -->
-        <div
-          hx-get="/ui/partials/camera"
-          hx-trigger="load, every 30s"
-          hx-target="this"
-          hx-swap="outerHTML"
-          class="bg-gray-900 rounded-xl border border-gray-800 p-4">
-          <p class="text-gray-500 text-sm animate-pulse">Cargando cámara…</p>
-        </div>
-
-        <!-- Eventos recientes (HTMX polling) -->
-        <div
-          hx-get="/ui/partials/events?limit=20"
-          hx-trigger="load, every 15s"
-          hx-target="this"
-          hx-swap="outerHTML"
-          class="lg:col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-4">
-          <p class="text-gray-500 text-sm animate-pulse">Cargando eventos…</p>
-        </div>
-
       </div>
-    </main>
+      <div class="sp-chart-shell">
+        <div id="telemetry-chart" class="h-[280px] w-full"></div>
+        <div id="telemetry-chart-empty" class="sp-chart-empty hidden">No telemetry available for the selected zone.</div>
+      </div>
+    </section>
 
-    <script>
-      // Live clock
-      function updateClock() {
-        document.getElementById('clock').textContent = new Date().toUTCString().replace(' GMT', ' UTC');
-      }
-      updateClock();
-      setInterval(updateClock, 1000);
+    <div
+      id="camera-card"
+      class="sp-card p-5 lg:col-span-4"
+      hx-get="/ui/partials/camera"
+      hx-trigger="load, every 30s"
+      hx-target="this"
+      hx-swap="outerHTML">
+      <p class="text-sm text-[var(--sp-t2)]">Loading camera…</p>
+    </div>
 
-      // Health badge
-      async function checkHealth() {
-        const badge = document.getElementById('health-badge');
-        try {
-          const r = await fetch('/health');
-          if (r.ok) {
-            badge.textContent = '● OK';
-            badge.className = 'text-xs px-2 py-0.5 rounded-full font-semibold bg-green-950 text-green-400 border border-green-800';
-          } else {
-            throw new Error('bad status');
+    <div
+      id="events-card"
+      class="sp-card p-5 lg:col-span-12"
+      hx-get="/ui/partials/events?limit=20"
+      hx-trigger="load, every 15s"
+      hx-target="this"
+      hx-swap="outerHTML">
+      <p class="text-sm text-[var(--sp-t2)]">Loading events…</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  function dashboardPage() {
+    return {
+      zone: new URLSearchParams(location.search).get('zone') || 'greenhouse',
+      hoursBack: 2,
+      series: {
+        temperature: true,
+        humidity: true,
+        soil: true,
+      },
+      chart: null,
+      chartTimer: null,
+      chartData: {
+        temperature: [],
+        humidity: [],
+        soil: [],
+      },
+      loadToken: 0,
+      init() {
+        this.syncTargets();
+        this.initChart();
+        this.loadChart();
+        this.chartTimer = window.setInterval(() => this.loadChart(), 30000);
+        window.addEventListener('resize', () => {
+          if (this.chart) {
+            this.chart.resize();
           }
+        });
+      },
+      setZone(nextZone) {
+        if (!nextZone) return;
+        this.zone = nextZone;
+        const params = new URLSearchParams(window.location.search);
+        params.set('zone', nextZone);
+        history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+        this.syncTargets();
+        this.refreshPartials();
+        this.loadChart();
+      },
+      setRange(nextRange) {
+        this.hoursBack = nextRange;
+        this.loadChart();
+      },
+      toggleSeries(key) {
+        this.series[key] = !this.series[key];
+        this.applyChartData();
+      },
+      syncTargets() {
+        const targets = {
+          'sensors-slot': `/ui/partials/sensors?zone=${encodeURIComponent(this.zone)}`,
+          'actuator-card': `/ui/partials/actuator?actuator_id={{ actuator_id }}&zone=${encodeURIComponent(this.zone)}`,
+          'rule-card': `/ui/partials/rule?actuator_id={{ actuator_id }}&zone=${encodeURIComponent(this.zone)}`,
+        };
+        Object.entries(targets).forEach(([id, url]) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.setAttribute('hx-get', url);
+          htmx.process(el);
+        });
+      },
+      refreshPartials() {
+        ['sensors-slot', 'actuator-card', 'rule-card', 'camera-card', 'events-card'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          htmx.process(el);
+          const url = el.getAttribute('hx-get');
+          if (url) {
+            htmx.ajax('GET', url, { target: el, swap: 'outerHTML' });
+          }
+        });
+      },
+      initChart() {
+        const container = document.getElementById('telemetry-chart');
+        if (!container || this.chart) return;
+        this.chart = echarts.init(container);
+        this.chart.setOption({
+          backgroundColor: 'transparent',
+          grid: { top: 20, right: 16, bottom: 40, left: 50, containLabel: false },
+          tooltip: {
+            trigger: 'axis',
+            backgroundColor: 'rgba(13,13,18,0.95)',
+            borderColor: 'rgba(255,255,255,0.08)',
+            textStyle: { color: '#f5f5f7', fontSize: 12, fontFamily: '-apple-system' }
+          },
+          legend: { show: false },
+          xAxis: {
+            type: 'time',
+            axisLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+            axisTick: { show: false },
+            axisLabel: { color: '#636366', fontSize: 11 },
+            splitLine: { lineStyle: { color: 'rgba(255,255,255,0.04)', type: 'dashed' } }
+          },
+          yAxis: {
+            type: 'value',
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: { color: '#636366', fontSize: 11 },
+            splitLine: { lineStyle: { color: 'rgba(255,255,255,0.04)', type: 'dashed' } }
+          },
+          series: [
+            {
+              name: 'Temperature',
+              type: 'line',
+              smooth: 0.4,
+              showSymbol: false,
+              lineStyle: { color: '#f5a623', width: 2 },
+              areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{offset: 0, color: 'rgba(245,166,35,0.15)'}, {offset: 1, color: 'rgba(245,166,35,0)'}] } },
+              data: []
+            },
+            {
+              name: 'Humidity',
+              type: 'line',
+              smooth: 0.4,
+              showSymbol: false,
+              lineStyle: { color: '#00c2ff', width: 2 },
+              areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{offset: 0, color: 'rgba(0,194,255,0.12)'}, {offset: 1, color: 'rgba(0,194,255,0)'}] } },
+              data: []
+            },
+            {
+              name: 'Soil Moisture',
+              type: 'line',
+              smooth: 0.4,
+              showSymbol: false,
+              lineStyle: { color: '#34d058', width: 2 },
+              areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{offset: 0, color: 'rgba(52,208,88,0.12)'}, {offset: 1, color: 'rgba(52,208,88,0)'}] } },
+              data: []
+            }
+          ]
+        });
+      },
+      applyChartData() {
+        if (!this.chart) return;
+        this.chart.setOption({
+          series: [
+            { data: this.series.temperature ? this.chartData.temperature : [] },
+            { data: this.series.humidity ? this.chartData.humidity : [] },
+            { data: this.series.soil ? this.chartData.soil : [] },
+          ]
+        });
+      },
+      showEmptyChart(show) {
+        const empty = document.getElementById('telemetry-chart-empty');
+        if (!empty) return;
+        empty.classList.toggle('hidden', !show);
+      },
+      async loadChart() {
+        this.initChart();
+        if (!this.chart) return;
+        const token = ++this.loadToken;
+        const zone = this.zone;
+        const hoursBack = this.hoursBack;
+        const to = new Date();
+        const from = new Date(Date.now() - hoursBack * 3600000);
+
+        try {
+          const latest = await fetch(`/api/v1/sensors/latest?zone=${encodeURIComponent(zone)}`, { cache: 'no-store' })
+            .then((r) => r.ok ? r.json() : []);
+          if (token !== this.loadToken) return;
+          const deviceId = latest?.[0]?.device_id;
+          if (!deviceId) {
+            this.chartData = { temperature: [], humidity: [], soil: [] };
+            this.applyChartData();
+            this.showEmptyChart(true);
+            return;
+          }
+          const hist = await fetch(`/api/v1/sensors/history?device_id=${encodeURIComponent(deviceId)}&from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`, { cache: 'no-store' })
+            .then((r) => r.ok ? r.json() : []);
+          if (token !== this.loadToken) return;
+
+          this.chartData = {
+            temperature: hist.filter((r) => r.temperature_c != null).map((r) => [r.ts, r.temperature_c]),
+            humidity: hist.filter((r) => r.humidity_pct != null).map((r) => [r.ts, r.humidity_pct]),
+            soil: hist.filter((r) => r.soil_moisture_pct != null).map((r) => [r.ts, r.soil_moisture_pct]),
+          };
+
+          const hasData = this.chartData.temperature.length || this.chartData.humidity.length || this.chartData.soil.length;
+          this.applyChartData();
+          this.showEmptyChart(!hasData);
         } catch {
-          badge.textContent = '● Error';
-          badge.className = 'text-xs px-2 py-0.5 rounded-full font-semibold bg-red-950 text-red-400 border border-red-800';
+          if (token !== this.loadToken) return;
+          this.chartData = { temperature: [], humidity: [], soil: [] };
+          this.applyChartData();
+          this.showEmptyChart(true);
         }
       }
-      checkHealth();
-      setInterval(checkHealth, 30000);
-
-      // Zone selector: update all HTMX elements that depend on zone
-      function setZone(zone) {
-        const sensorsSlot = document.getElementById('sensors-slot');
-        if (sensorsSlot) {
-          sensorsSlot.setAttribute('hx-get', `/ui/partials/sensors?zone=${zone}`);
-          htmx.process(sensorsSlot);
-          htmx.trigger(sensorsSlot, 'load');
-        }
-        const actuatorCard = document.getElementById('actuator-card');
-        if (actuatorCard) {
-          actuatorCard.setAttribute('hx-get', `/ui/partials/actuator?actuator_id=irrigation-main&zone=${zone}`);
-          htmx.process(actuatorCard);
-          htmx.trigger(actuatorCard, 'load');
-        }
-        loadHistChart(zone);
-      }
-
-      // Chart.js: historical temperature / humidity / soil moisture
-      let histChart = null;
-
-      async function loadHistChart(zoneOverride) {
-        const zone = zoneOverride || document.getElementById('zone-select')?.value || 'greenhouse';
-        const latest = await fetch(`/api/v1/sensors/latest?zone=${zone}`)
-          .then(r => r.ok ? r.json() : [])
-          .catch(() => []);
-        const deviceId = latest?.[0]?.device_id;
-        const emptyEl = document.getElementById('hist-empty');
-
-        if (!deviceId) {
-          if (emptyEl) emptyEl.classList.remove('hidden');
-          return;
-        }
-        if (emptyEl) emptyEl.classList.add('hidden');
-
-        const to = new Date().toISOString();
-        const from = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
-        const hist = await fetch(
-          `/api/v1/sensors/history?device_id=${encodeURIComponent(deviceId)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-        ).then(r => r.ok ? r.json() : []).catch(() => []);
-
-        if (!hist.length) {
-          if (emptyEl) emptyEl.classList.remove('hidden');
-          return;
-        }
-
-        const labels = hist.map(r => new Date(r.ts).toLocaleTimeString());
-        const mkDataset = (label, key, color) => ({
-          label,
-          data: hist.map(r => r[key] ?? null),
-          borderColor: color,
-          backgroundColor: color + '18',
-          tension: 0.3,
-          fill: false,
-          spanGaps: true,
-          pointRadius: 2,
-        });
-
-        const ctx = document.getElementById('histChart');
-        if (!ctx) return;
-        if (histChart) histChart.destroy();
-        histChart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [
-              mkDataset('Temperatura (°C)', 'temperature_c', '#f97316'),
-              mkDataset('Humedad amb. (%)', 'humidity_pct', '#3b82f6'),
-              mkDataset('Humedad suelo (%)', 'soil_moisture_pct', '#22c55e'),
-            ],
-          },
-          options: {
-            responsive: true,
-            interaction: { mode: 'index', intersect: false },
-            scales: {
-              x: { ticks: { color: '#9ca3af', maxTicksLimit: 10 }, grid: { color: '#1f2937' } },
-              y: { ticks: { color: '#9ca3af' }, grid: { color: '#1f2937' } },
-            },
-            plugins: {
-              legend: { labels: { color: '#e5e7eb', boxWidth: 12 } },
-            },
-          },
-        });
-      }
-
-      loadHistChart();
-      setInterval(loadHistChart, 30000);
-    </script>
-  </body>
-</html>
+    };
+  }
+</script>
+{% endblock %}

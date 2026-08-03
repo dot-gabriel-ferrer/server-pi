@@ -1,0 +1,66 @@
+<div
+  id="services-panel"
+  hx-get="/ui/partials/services"
+  hx-trigger="every 10s, refresh"
+  hx-target="this"
+  hx-swap="outerHTML"
+  class="sp-card p-5">
+  <div class="mb-5 flex items-end justify-between gap-4">
+    <div>
+      <p class="sp-section-title mb-2">Services</p>
+      <h2 class="text-lg font-semibold text-[var(--sp-t1)]">Docker runtime</h2>
+    </div>
+    <p class="text-sm text-[var(--sp-t2)]">10s refresh</p>
+  </div>
+
+  {% if services %}
+  <div class="space-y-3">
+    {% for service in services %}
+    {% set status = service.status | lower %}
+    <div
+      class="rounded-[14px] border border-[var(--sp-border)] bg-[rgba(255,255,255,0.01)] px-4 py-4"
+      x-data="{ loading: '' }">
+      <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div class="min-w-0">
+          <p class="sp-mono text-[var(--sp-t1)]">{{ service.name }}</p>
+          <p class="mt-1 text-xs text-[var(--sp-t3)]">{{ service.image }} · {{ service.id }}</p>
+        </div>
+
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div class="flex items-center gap-2 text-sm text-[var(--sp-t2)]">
+            {% if status == "running" %}
+            <span class="sp-dot-ok"></span>
+            {% elif status in ["restarting", "created", "paused"] %}
+            <span class="sp-dot-warn"></span>
+            {% else %}
+            <span class="sp-dot-err"></span>
+            {% endif %}
+            <span class="capitalize">{{ status }}</span>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            {% for action in ["start", "stop", "restart"] %}
+            <button
+              type="button"
+              class="sp-btn"
+              x-bind:disabled="loading !== ''"
+              x-bind:class="{ 'opacity-60 cursor-wait': loading === '{{ action }}' }"
+              x-on:click="loading = '{{ action }}'"
+              hx-post="/api/v1/services/{{ service.name }}/{{ action }}"
+              hx-swap="none"
+              hx-on::after-request="loading=''; htmx.trigger(document.getElementById('services-panel'), 'refresh')">
+              {{ action | capitalize }}
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="rounded-[14px] border border-dashed border-[var(--sp-border-hi)] px-4 py-8 text-center text-sm text-[var(--sp-t2)]">
+    Docker socket not available
+  </div>
+  {% endif %}
+</div>

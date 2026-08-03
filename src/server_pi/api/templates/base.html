@@ -1,0 +1,932 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Server Pi{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+        --sp-void: #070709;
+        --sp-depth: #0d0d12;
+        --sp-surface: #13131a;
+        --sp-overlay: #1a1a24;
+        --sp-border: rgba(255, 255, 255, 0.06);
+        --sp-border-hi: rgba(255, 255, 255, 0.12);
+        --sp-accent: #00c2ff;
+        --sp-accent-dim: #0099cc;
+        --sp-accent-bg: rgba(0, 194, 255, 0.08);
+        --sp-ok: #34d058;
+        --sp-warn: #f5a623;
+        --sp-err: #ff5f57;
+        --sp-idle: #636366;
+        --sp-t1: #f5f5f7;
+        --sp-t2: #98989d;
+        --sp-t3: #48484a;
+        --sp-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
+        --sp-mono: "SF Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+        --sp-accent-hsl: 194 100% 50%;
+        --sp-void-hsl: 240 13% 3%;
+        --sp-radius-lg: 16px;
+        --sp-radius-md: 12px;
+        --sp-radius-sm: 8px;
+        --sp-nav-height: 52px;
+        --sp-ease: ease-out;
+        --sp-duration-fast: 200ms;
+        --sp-duration-base: 260ms;
+        --sp-duration-slow: 350ms;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-height: 100%;
+        background: var(--sp-void);
+        scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+        scrollbar-width: thin;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background:
+          radial-gradient(circle at top, rgba(0, 194, 255, 0.08), transparent 36%),
+          radial-gradient(circle at 80% 20%, rgba(100, 100, 255, 0.08), transparent 28%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0)),
+          var(--sp-void);
+        color: var(--sp-t1);
+        font-family: var(--sp-font);
+        line-height: 1.5;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        transition: opacity var(--sp-duration-fast) var(--sp-ease);
+      }
+
+      body.sp-page-leaving {
+        opacity: 0.98;
+      }
+
+      ::selection {
+        background: rgba(0, 194, 255, 0.22);
+        color: var(--sp-t1);
+      }
+
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        border: 2px solid transparent;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        background-clip: padding-box;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+        background-clip: padding-box;
+      }
+
+      :focus-visible {
+        outline: none;
+        box-shadow:
+          0 0 0 1px rgba(0, 194, 255, 0.48),
+          0 0 0 4px rgba(0, 194, 255, 0.14);
+      }
+
+      a,
+      button,
+      input,
+      select,
+      textarea {
+        transition:
+          color var(--sp-duration-fast) var(--sp-ease),
+          background-color var(--sp-duration-fast) var(--sp-ease),
+          border-color var(--sp-duration-fast) var(--sp-ease),
+          opacity var(--sp-duration-fast) var(--sp-ease),
+          transform var(--sp-duration-fast) var(--sp-ease);
+      }
+
+      #sp-bg {
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      #sp-nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        height: var(--sp-nav-height);
+        border-bottom: 1px solid var(--sp-border);
+        background: rgba(7, 7, 9, 0.85);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+      }
+
+      #sp-main {
+        position: relative;
+        z-index: 1;
+      }
+
+      #sp-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--sp-void);
+        transition:
+          opacity 500ms var(--sp-ease),
+          visibility 500ms var(--sp-ease);
+      }
+
+      #sp-loader.is-hidden {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      #sp-loader-core {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+      }
+
+      #sp-loader-ring {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        border-radius: 999px;
+        border: 1px solid rgba(0, 194, 255, 0.32);
+        background: radial-gradient(circle, rgba(0, 194, 255, 0.18), rgba(0, 194, 255, 0.02));
+      }
+
+      #sp-loader-ring::before,
+      #sp-loader-ring::after {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        border: 1px solid rgba(0, 194, 255, 0.22);
+        animation: sp-pulse 1.35s var(--sp-ease) infinite;
+      }
+
+      #sp-loader-ring::after {
+        animation-delay: 180ms;
+      }
+
+      #sp-loader-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--sp-t1);
+      }
+
+      #sp-loader-log {
+        position: absolute;
+        right: 24px;
+        bottom: 24px;
+        left: 24px;
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 14px 16px;
+        border: 1px solid var(--sp-border);
+        border-radius: 14px;
+        background: rgba(19, 19, 26, 0.64);
+        backdrop-filter: blur(18px) saturate(160%);
+        -webkit-backdrop-filter: blur(18px) saturate(160%);
+        color: var(--sp-t2);
+        font-family: var(--sp-mono);
+        font-size: 11px;
+        line-height: 1.6;
+        min-height: 90px;
+      }
+
+      .sp-loader-log-line {
+        display: block;
+        opacity: 0;
+        transform: translateY(6px);
+        animation: sp-log-in 260ms var(--sp-ease) forwards;
+      }
+
+      #sp-transition {
+        position: fixed;
+        inset: 0;
+        z-index: 9990;
+        opacity: 0;
+        pointer-events: none;
+        background: linear-gradient(180deg, rgba(7, 7, 9, 0.14), rgba(7, 7, 9, 0.7));
+        transition: opacity var(--sp-duration-fast) var(--sp-ease);
+      }
+
+      body.sp-page-leaving #sp-transition {
+        opacity: 1;
+      }
+
+      #sp-htmx-progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 101;
+        width: 0;
+        height: 2px;
+        opacity: 0;
+        background: linear-gradient(90deg, rgba(0, 194, 255, 0.75), var(--sp-accent));
+        transition:
+          width var(--sp-duration-base) var(--sp-ease),
+          opacity var(--sp-duration-fast) var(--sp-ease);
+      }
+
+      .htmx-added {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      .htmx-settling {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+        transition: opacity 0.28s ease-out, transform 0.28s ease-out;
+      }
+
+      .htmx-swapping {
+        opacity: 0;
+        transition: opacity 0.12s ease-in;
+      }
+
+      .sp-nav-link {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        height: 52px;
+        color: var(--sp-t2);
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+      }
+
+      .sp-nav-link::after {
+        content: "";
+        display: block;
+        width: 0;
+        height: 1px;
+        background: var(--sp-accent);
+        transition: width 0.2s ease-out;
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+      }
+
+      .sp-nav-link:hover {
+        color: var(--sp-t1);
+      }
+
+      .sp-nav-link:hover::after {
+        width: 100%;
+      }
+
+      .sp-nav-link.is-active {
+        color: var(--sp-t1);
+      }
+
+      .sp-nav-link.is-active::after {
+        width: 100%;
+      }
+
+      .sp-nav-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--sp-t1);
+        text-decoration: none;
+      }
+
+      .sp-brand-mark {
+        display: grid;
+        width: 24px;
+        height: 24px;
+        place-items: center;
+        border-radius: 8px;
+        background: linear-gradient(180deg, rgba(0, 194, 255, 0.94), rgba(0, 153, 204, 0.9));
+        color: #031117;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .sp-brand-type {
+        font-size: 0.9375rem;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+      }
+
+      .sp-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 116px;
+        padding: 7px 12px;
+        border: 1px solid var(--sp-border);
+        border-radius: 999px;
+        background: rgba(19, 19, 26, 0.72);
+        color: var(--sp-t2);
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+
+      .sp-status-badge[data-state="ok"] {
+        color: var(--sp-t1);
+      }
+
+      .sp-status-badge[data-state="warn"] {
+        color: #ffd18b;
+      }
+
+      .sp-status-badge[data-state="err"] {
+        color: #ffb0ab;
+      }
+
+      .sp-status-badge[data-state="idle"] {
+        color: var(--sp-t2);
+      }
+
+      .sp-card {
+        background: var(--sp-surface);
+        border: 1px solid var(--sp-border);
+        border-radius: 16px;
+        transition: border-color 0.2s ease-out, box-shadow 0.2s ease-out, transform 0.2s ease-out;
+      }
+
+      .sp-card:hover {
+        border-color: var(--sp-border-hi);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      }
+
+      .sp-btn {
+        border: 1px solid var(--sp-border);
+        background: transparent;
+        color: var(--sp-t2);
+        border-radius: 8px;
+        padding: 6px 16px;
+        font-size: 13px;
+        transition: all 0.2s ease-out;
+        cursor: pointer;
+      }
+
+      .sp-btn:hover {
+        border-color: var(--sp-border-hi);
+        color: var(--sp-t1);
+        background: var(--sp-overlay);
+      }
+
+      .sp-btn-accent {
+        background: var(--sp-accent);
+        color: #000;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s ease-out;
+        cursor: pointer;
+      }
+
+      .sp-btn-accent:hover {
+        background: var(--sp-accent-dim);
+      }
+
+      .sp-btn:active,
+      .sp-btn-accent:active {
+        transform: scale(0.97);
+        transition: transform 0.08s ease-out;
+      }
+
+      .sp-dot-ok,
+      .sp-dot-err,
+      .sp-dot-warn,
+      .sp-dot-idle {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+        flex: 0 0 auto;
+      }
+
+      .sp-dot-ok {
+        background: var(--sp-ok);
+        box-shadow: 0 0 6px var(--sp-ok);
+        animation: sp-pulse-ring 2.5s ease-out infinite;
+      }
+
+      .sp-dot-err {
+        background: var(--sp-err);
+      }
+
+      .sp-dot-warn {
+        background: var(--sp-warn);
+      }
+
+      .sp-dot-idle {
+        background: var(--sp-idle);
+      }
+
+      .sp-metric-val {
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--sp-t1);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .sp-val-update {
+        animation: sp-val-tick 0.2s ease-out;
+      }
+
+      .sp-metric-lbl {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--sp-t3);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .sp-section-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--sp-t3);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 16px;
+      }
+
+      .sp-bar-track {
+        height: 3px;
+        background: var(--sp-overlay);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .sp-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+      }
+
+      .sp-divider {
+        height: 1px;
+        background: var(--sp-border);
+      }
+
+      .sp-mono {
+        font-family: var(--sp-mono);
+        font-size: 12px;
+      }
+
+      @keyframes sp-pulse-ring {
+        0% {
+          box-shadow: 0 0 0 0 rgba(52, 208, 88, 0.4);
+        }
+        70% {
+          box-shadow: 0 0 0 5px rgba(52, 208, 88, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(52, 208, 88, 0);
+        }
+      }
+
+      @keyframes sp-val-tick {
+        0% {
+          opacity: 0.4;
+          transform: translateY(-3px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes sp-pulse {
+        0% {
+          opacity: 0.9;
+          transform: scale(0.86);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(1.45);
+        }
+      }
+
+      @keyframes sp-log-in {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 768px) {
+        #sp-loader-log {
+          right: 16px;
+          bottom: 16px;
+          left: 16px;
+          min-height: 110px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          animation-duration: 1ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 1ms !important;
+          scroll-behavior: auto !important;
+        }
+
+        .sp-dot-ok,
+        .sp-val-update {
+          animation: none;
+        }
+
+        .htmx-added,
+        .htmx-settling,
+        .htmx-swapping {
+          transform: none !important;
+        }
+      }
+    </style>
+    {% block extra_head %}{% endblock %}
+  </head>
+  {% set current_path = request.url.path if request is defined else '' %}
+  <body>
+    <canvas id="sp-bg" aria-hidden="true"></canvas>
+
+    <div id="sp-htmx-progress" aria-hidden="true"></div>
+
+    <nav id="sp-nav">
+      <div class="mx-auto flex h-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div class="flex min-w-0 items-center gap-8">
+          <a href="/" class="sp-nav-brand" aria-label="Server Pi home">
+            <span class="sp-brand-mark" aria-hidden="true">SP</span>
+            <span class="sp-brand-type">Server Pi</span>
+          </a>
+          <div class="hidden items-center gap-6 md:flex">
+            <a href="/" class="sp-nav-link{% if current_path == '/' %} is-active{% endif %}">Home</a>
+            <a href="/dashboard" class="sp-nav-link{% if current_path.startswith('/dashboard') %} is-active{% endif %}">Dashboard</a>
+            <a href="/resources" class="sp-nav-link{% if current_path.startswith('/resources') %} is-active{% endif %}">Resources</a>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 sm:gap-4">
+          <div id="sp-health-badge" class="sp-status-badge" data-state="idle" role="status" aria-live="polite">
+            <span class="sp-dot-idle" id="sp-health-dot" aria-hidden="true"></span>
+            <span id="sp-health-text">Checking</span>
+          </div>
+          <div id="sp-clock" class="hidden font-mono text-xs text-[var(--sp-t2)] sm:block" aria-label="Current UTC time">--:--:-- UTC</div>
+        </div>
+      </div>
+    </nav>
+
+    <div id="sp-loader" aria-live="polite">
+      <div id="sp-loader-core">
+        <div id="sp-loader-ring" aria-hidden="true"></div>
+        <div id="sp-loader-title">Server Pi</div>
+      </div>
+      <div id="sp-loader-log" aria-hidden="true"></div>
+    </div>
+
+    <main id="sp-main" class="mx-auto min-h-[calc(100vh-var(--sp-nav-height))] w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {% block content %}{% endblock %}
+    </main>
+
+    <div id="sp-transition" aria-hidden="true"></div>
+
+    <script>
+      (() => {
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const body = document.body;
+        const loader = document.getElementById("sp-loader");
+        const loaderLog = document.getElementById("sp-loader-log");
+        const progressBar = document.getElementById("sp-htmx-progress");
+        const clockEl = document.getElementById("sp-clock");
+        const healthBadge = document.getElementById("sp-health-badge");
+        const healthDot = document.getElementById("sp-health-dot");
+        const healthText = document.getElementById("sp-health-text");
+
+        const setHealthState = (state, label) => {
+          const dotClassMap = {
+            ok: "sp-dot-ok",
+            warn: "sp-dot-warn",
+            err: "sp-dot-err",
+            idle: "sp-dot-idle"
+          };
+          healthBadge.dataset.state = state;
+          healthDot.className = dotClassMap[state] || "sp-dot-idle";
+          healthText.textContent = label;
+        };
+
+        const updateClock = () => {
+          const now = new Date();
+          const hh = String(now.getUTCHours()).padStart(2, "0");
+          const mm = String(now.getUTCMinutes()).padStart(2, "0");
+          const ss = String(now.getUTCSeconds()).padStart(2, "0");
+          clockEl.textContent = `${hh}:${mm}:${ss} UTC`;
+        };
+
+        const checkHealth = async () => {
+          try {
+            const response = await fetch("/health", {
+              headers: { "Accept": "application/json, text/plain, */*" },
+              cache: "no-store"
+            });
+
+            if (!response.ok) {
+              throw new Error(`status-${response.status}`);
+            }
+
+            let payload = null;
+            try {
+              payload = await response.clone().json();
+            } catch {
+              payload = null;
+            }
+
+            const status = typeof payload?.status === "string" ? payload.status.toLowerCase() : "ok";
+            if (status.includes("warn") || status.includes("degrad")) {
+              setHealthState("warn", "Degraded");
+              return;
+            }
+            if (status.includes("err") || status.includes("fail") || status.includes("down")) {
+              setHealthState("err", "Offline");
+              return;
+            }
+            setHealthState("ok", "Healthy");
+          } catch {
+            setHealthState("err", "Offline");
+          }
+        };
+
+        const setupPageTransitions = () => {
+          document.addEventListener("click", (event) => {
+            const link = event.target.closest("a[href]");
+            if (!link) {
+              return;
+            }
+
+            const href = link.getAttribute("href");
+            if (
+              !href ||
+              href.startsWith("#") ||
+              href.startsWith("mailto:") ||
+              href.startsWith("tel:") ||
+              link.hasAttribute("download") ||
+              link.target === "_blank" ||
+              event.metaKey ||
+              event.ctrlKey ||
+              event.shiftKey ||
+              event.altKey
+            ) {
+              return;
+            }
+
+            const destination = new URL(link.href, window.location.href);
+            if (destination.origin !== window.location.origin || destination.href === window.location.href) {
+              return;
+            }
+
+            event.preventDefault();
+            body.classList.add("sp-page-leaving");
+            window.setTimeout(() => {
+              window.location.assign(destination.href);
+            }, reduceMotion ? 0 : 150);
+          });
+        };
+
+        const setupHtmxProgress = () => {
+          if (!window.htmx) {
+            return;
+          }
+
+          let progressTimeout = null;
+
+          const showProgress = () => {
+            window.clearTimeout(progressTimeout);
+            progressBar.style.opacity = "1";
+            progressBar.style.width = "72%";
+          };
+
+          const hideProgress = () => {
+            progressBar.style.width = "100%";
+            progressTimeout = window.setTimeout(() => {
+              progressBar.style.opacity = "0";
+              progressBar.style.width = "0";
+            }, reduceMotion ? 0 : 160);
+          };
+
+          document.body.addEventListener("htmx:beforeRequest", showProgress);
+          document.body.addEventListener("htmx:afterRequest", hideProgress);
+          document.body.addEventListener("htmx:responseError", hideProgress);
+          document.body.addEventListener("htmx:sendError", hideProgress);
+        };
+
+        const setupLoader = () => {
+          const logs = [
+            "[00:00.000] Initializing IoT gateway...",
+            "[00:00.042] Connecting to MQTT broker...",
+            "[00:00.128] Loading sensor streams...",
+            "[00:00.284] Syncing actuator registry...",
+            "[00:00.441] Priming dashboard surface...",
+            "[00:00.612] Establishing secure control plane...",
+            "[00:00.884] Finalizing runtime graph..."
+          ];
+
+          let index = 0;
+          let dismissed = false;
+
+          const dismissLoader = () => {
+            if (dismissed) {
+              return;
+            }
+            dismissed = true;
+            loader.classList.add("is-hidden");
+            body.classList.add("sp-ready");
+            const main = document.getElementById("sp-main");
+            if (main && !reduceMotion) {
+              main.style.cssText = "opacity:0;transform:translateY(12px);transition:opacity 0.4s ease-out,transform 0.4s ease-out;";
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  main.style.cssText = "opacity:1;transform:translateY(0);transition:opacity 0.4s ease-out,transform 0.4s ease-out;";
+                });
+              });
+            }
+            window.setTimeout(() => {
+              loader.style.display = "none";
+            }, reduceMotion ? 0 : 500);
+          };
+
+          const interval = window.setInterval(() => {
+            if (index >= logs.length) {
+              window.clearInterval(interval);
+              dismissLoader();
+              return;
+            }
+
+            const line = document.createElement("span");
+            line.className = "sp-loader-log-line";
+            line.textContent = logs[index];
+            loaderLog.appendChild(line);
+            loaderLog.scrollTop = loaderLog.scrollHeight;
+            index += 1;
+          }, 150);
+
+          window.setTimeout(() => {
+            window.clearInterval(interval);
+            dismissLoader();
+          }, 1500);
+        };
+
+        const setupBackground = () => {
+          const canvas = document.getElementById("sp-bg");
+          const context = canvas.getContext("2d");
+          if (!context) {
+            return;
+          }
+
+          let width = 0;
+          let height = 0;
+          let deviceRatio = Math.min(window.devicePixelRatio || 1, 2);
+          let particles = [];
+          let rafId = null;
+
+          const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+          const lerp = (start, end, factor) => start + (end - start) * factor;
+
+          const createParticles = () => {
+            const count = clamp(Math.round((width * height) / 18000), 80, 120);
+            particles = Array.from({ length: count }, () => ({
+              x: Math.random() * width,
+              y: Math.random() * height,
+              originX: Math.random() * width,
+              originY: Math.random() * height,
+              radius: 0.9 + Math.random() * 1.1,
+              alphaBase: 0.15 + Math.random() * 0.2,
+              phase: Math.random() * Math.PI * 2,
+              phaseY: Math.random() * Math.PI * 2,
+              drift: 0.3 + Math.random() * 0.7,
+              amplitudeX: 10 + Math.random() * 18,
+              amplitudeY: 12 + Math.random() * 22
+            }));
+          };
+
+          const resize = () => {
+            deviceRatio = Math.min(window.devicePixelRatio || 1, 2);
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = Math.floor(width * deviceRatio);
+            canvas.height = Math.floor(height * deviceRatio);
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
+            context.setTransform(deviceRatio, 0, 0, deviceRatio, 0, 0);
+            createParticles();
+          };
+
+          const draw = (time) => {
+            const t = time * 0.0003;
+            context.clearRect(0, 0, width, height);
+
+            for (let i = 0; i < particles.length; i += 1) {
+              const particle = particles[i];
+              const waveX = Math.sin((particle.originY * 0.004) + t + particle.phase) * particle.amplitudeX;
+              const waveY = Math.cos((particle.originX * 0.0035) + t + particle.phaseY) * particle.amplitudeY;
+              particle.x = particle.originX + waveX + Math.sin((t * 0.8) + particle.phase) * particle.drift * 4;
+              particle.y = particle.originY + waveY;
+            }
+
+            for (let i = 0; i < particles.length; i += 1) {
+              const a = particles[i];
+              for (let j = i + 1; j < particles.length; j += 1) {
+                const b = particles[j];
+                const dx = a.x - b.x;
+                const dy = a.y - b.y;
+                const distance = Math.hypot(dx, dy);
+                if (distance > 150) {
+                  continue;
+                }
+                const opacity = (1 - distance / 150) * 0.08;
+                context.beginPath();
+                context.strokeStyle = `rgba(110, 170, 255, ${opacity.toFixed(4)})`;
+                context.lineWidth = 1;
+                context.moveTo(a.x, a.y);
+                context.lineTo(b.x, b.y);
+                context.stroke();
+              }
+            }
+
+            for (const particle of particles) {
+              const pulse = (Math.sin(t + particle.phase) + 1) / 2;
+              const red = Math.round(lerp(0, 100, pulse));
+              const green = Math.round(lerp(194, 100, pulse));
+              const blue = 255;
+              const alpha = lerp(0.1, 0.05, pulse) + particle.alphaBase * 0.24;
+              context.beginPath();
+              context.fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha.toFixed(4)})`;
+              context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+              context.fill();
+            }
+
+            if (!reduceMotion) {
+              rafId = window.requestAnimationFrame(draw);
+            }
+          };
+
+          resize();
+          if (reduceMotion) {
+            draw(performance.now());
+          } else {
+            rafId = window.requestAnimationFrame(draw);
+          }
+
+          window.addEventListener("resize", resize, { passive: true });
+          window.addEventListener("beforeunload", () => {
+            if (rafId) {
+              window.cancelAnimationFrame(rafId);
+            }
+          });
+        };
+
+        updateClock();
+        checkHealth();
+        setupPageTransitions();
+        setupHtmxProgress();
+        setupLoader();
+        setupBackground();
+        window.setInterval(updateClock, 1000);
+        window.setInterval(checkHealth, 30000);
+      })();
+    </script>
+    {% block extra_scripts %}{% endblock %}
+  </body>
+</html>

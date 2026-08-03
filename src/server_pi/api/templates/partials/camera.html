@@ -1,33 +1,38 @@
 <div
+  id="camera-card"
   hx-get="/ui/partials/camera"
   hx-trigger="every 30s"
   hx-target="this"
   hx-swap="outerHTML"
-  class="bg-gray-900 rounded-xl border border-gray-800 p-4">
-  <h2 class="font-semibold mb-3">📷 Cámara — {{ camera.zone }}</h2>
-
-  {% if camera.stream_url %}
-  <a href="{{ camera.stream_url }}" target="_blank" rel="noopener noreferrer"
-     class="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 text-sm mb-3 transition-colors">
-    ▶ Abrir stream RTSP
-  </a>
-  {% else %}
-  <p class="text-gray-500 text-xs mb-3">Sin stream RTSP configurado.</p>
-  {% endif %}
+  class="sp-card p-5">
+  <div class="mb-5 flex items-start justify-between gap-4">
+    <div>
+      <p class="sp-section-title mb-2">Visual feed</p>
+      <h2 class="text-lg font-semibold text-[var(--sp-t1)]">Camera · {{ camera.zone }}</h2>
+    </div>
+    {% if camera.stream_url %}
+    <a href="{{ camera.stream_url }}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-[var(--sp-accent)] hover:text-[var(--sp-t1)]">
+      View Stream
+    </a>
+    {% endif %}
+  </div>
 
   {% if camera.latest_snapshot_url %}
   <img
     src="{{ camera.latest_snapshot_url }}?t={{ now_ts }}"
-    alt="Último snapshot"
-    class="w-full rounded-lg border border-gray-700 object-cover" />
-  {% if camera.latest_snapshot_ts %}
-  <p class="text-xs text-gray-500 mt-2">
-    Snapshot: {{ camera.latest_snapshot_ts.strftime('%Y-%m-%d %H:%M:%S') }} UTC
+    alt="Latest snapshot"
+    loading="lazy"
+    class="h-56 w-full rounded-[12px] border border-[var(--sp-border)] object-cover" />
+  <p class="mt-3 text-sm text-[var(--sp-t2)]">
+    {% if camera.latest_snapshot_ts %}
+    Snapshot captured {{ camera.latest_snapshot_ts.strftime('%Y-%m-%d %H:%M:%S') }} UTC
+    {% else %}
+    Snapshot available
+    {% endif %}
   </p>
-  {% endif %}
   {% else %}
-  <div class="w-full h-40 flex items-center justify-center bg-gray-800 rounded-lg border border-gray-700">
-    <p class="text-gray-500 text-sm">Sin snapshot disponible</p>
+  <div class="flex h-56 items-center justify-center rounded-[12px] border border-dashed border-[var(--sp-border-hi)] text-sm text-[var(--sp-t2)]">
+    No snapshot available
   </div>
   {% endif %}
 </div>

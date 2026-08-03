@@ -4,60 +4,94 @@
   hx-trigger="every 10s"
   hx-target="this"
   hx-swap="outerHTML"
-  class="bg-gray-900 rounded-xl border border-gray-800 p-4">
-  <h2 class="font-semibold mb-3">💧 Actuador — {{ actuator_id }}</h2>
-
-  <div class="flex items-center gap-3 mb-4">
-    <span class="text-3xl font-extrabold tracking-tight {% if state.state.value == 'on' %}text-green-400{% else %}text-red-400{% endif %}">
-      {{ state.state.value | upper }}
+  class="sp-card p-5"
+  x-data="{
+    endsAt: {% if state.state.value == 'on' %}{{ (state.updated_at.timestamp() + state.safety_timeout_sec) | int }}{% else %}null{% endif %},
+    remainingLabel: '',
+    timer: null,
+    tick() {
+      if (!this.endsAt) {
+        this.remainingLabel = '';
+        return;
+      }
+      const delta = Math.max(0, (this.endsAt * 1000) - Date.now());
+      const minutes = Math.floor(delta / 60000);
+      const seconds = Math.floor((delta % 60000) / 1000);
+      this.remainingLabel = `${minutes}m ${String(seconds).padStart(2, '0')}s remaining`;
+    },
+    init() {
+      this.tick();
+      if (this.endsAt) {
+        this.timer = window.setInterval(() => this.tick(), 1000);
+      }
+    }
+  }"
+  x-init="init()">
+  <div class="mb-5 flex items-start justify-between gap-4">
+    <div>
+      <p class="sp-section-title mb-2">Actuator</p>
+      <h2 class="sp-mono text-sm text-[var(--sp-t1)]">{{ actuator_id }}</h2>
+    </div>
+    <span class="inline-flex items-center rounded-full border border-[var(--sp-border)] bg-[rgba(255,255,255,0.02)] px-3 py-1 text-xs font-medium uppercase tracking-[0.08em] text-[var(--sp-t2)]">
+      {{ state.mode.value }}
     </span>
-    {% if state.state.value == 'on' %}
-    <span class="text-xs bg-green-900 text-green-300 border border-green-700 px-2 py-0.5 rounded-full animate-pulse font-semibold">
-      ● Activo — {{ state.safety_timeout_sec }} s máx.
-    </span>
-    {% endif %}
-    <span class="text-xs text-gray-400 px-2 py-0.5 rounded bg-gray-800 font-mono">{{ state.mode.value }}</span>
   </div>
 
-  <dl class="text-sm space-y-1.5 text-gray-400 mb-5">
-    <div class="flex justify-between">
-      <dt>Último cambio</dt>
-      <dd class="text-gray-300 font-mono text-xs">{{ state.updated_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</dd>
+  <div class="mb-5">
+    <div class="text-[48px] font-bold leading-none tracking-[-0.04em]" style="color: {% if state.state.value == 'on' %}var(--sp-ok){% else %}var(--sp-err){% endif %};">
+      {{ state.state.value | upper }}
     </div>
-    <div class="flex justify-between">
-      <dt>Actor</dt>
-      <dd class="text-gray-300">{{ state.last_actor }}</dd>
+    {% if state.state.value == 'on' %}
+    <div class="mt-3 flex items-center gap-2 text-sm text-[var(--sp-t2)]">
+      <span class="inline-flex h-2.5 w-2.5 animate-pulse rounded-full bg-[var(--sp-ok)]"></span>
+      <span>Active · <span x-text="remainingLabel"></span></span>
+    </div>
+    {% endif %}
+  </div>
+
+  <dl class="mb-5 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+    <div>
+      <dt class="sp-metric-lbl">Last change</dt>
+      <dd class="mt-1 sp-mono text-[var(--sp-t1)]">{{ state.updated_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</dd>
+    </div>
+    <div>
+      <dt class="sp-metric-lbl">Last actor</dt>
+      <dd class="mt-1 text-[var(--sp-t1)]">{{ state.last_actor }}</dd>
     </div>
   </dl>
 
-  <div class="flex gap-2 items-end">
-    <div class="flex-1">
-      <label class="block text-xs text-gray-500 mb-1">Duración</label>
+  <div class="space-y-4">
+    <label class="block">
+      <span class="sp-metric-lbl">Duration</span>
       <select id="dur-{{ actuator_id }}" name="duration_sec"
-        class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+        class="mt-2 w-full rounded-[10px] border border-[var(--sp-border)] bg-[var(--sp-overlay)] px-3 py-2 text-sm text-[var(--sp-t1)] focus:border-[var(--sp-border-hi)] focus:outline-none">
         <option value="30">30 s</option>
         <option value="60">1 min</option>
         <option value="120">2 min</option>
         <option value="300">5 min</option>
       </select>
+    </label>
+
+    <div class="grid grid-cols-2 gap-3">
+      <button
+        hx-post="/ui/actuators/{{ actuator_id }}/on?zone={{ zone }}"
+        hx-include="#dur-{{ actuator_id }}"
+        hx-target="#actuator-card"
+        hx-swap="outerHTML"
+        hx-confirm="Start manual irrigation for the selected duration?"
+        class="{% if state.state.value == 'off' %}sp-btn-accent{% else %}sp-btn{% endif %} w-full py-2 disabled:cursor-not-allowed disabled:opacity-40"
+        {% if state.state.value == 'on' %}disabled{% endif %}>
+        Start
+      </button>
+      <button
+        hx-post="/ui/actuators/{{ actuator_id }}/off?zone={{ zone }}"
+        hx-target="#actuator-card"
+        hx-swap="outerHTML"
+        class="sp-btn w-full py-2 disabled:cursor-not-allowed disabled:opacity-40"
+        style="border-color: {% if state.state.value == 'on' %}rgba(255,95,87,0.4){% else %}var(--sp-border){% endif %}; color: {% if state.state.value == 'on' %}var(--sp-err){% else %}var(--sp-t2){% endif %};"
+        {% if state.state.value == 'off' %}disabled{% endif %}>
+        Stop
+      </button>
     </div>
-    <button
-      hx-post="/ui/actuators/{{ actuator_id }}/on?zone={{ zone }}"
-      hx-include="#dur-{{ actuator_id }}"
-      hx-target="#actuator-card"
-      hx-swap="outerHTML"
-      hx-confirm="¿Activar riego manual por el tiempo seleccionado?"
-      class="flex-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-      {% if state.state.value == 'on' %}disabled{% endif %}>
-      ▶ Riego
-    </button>
-    <button
-      hx-post="/ui/actuators/{{ actuator_id }}/off?zone={{ zone }}"
-      hx-target="#actuator-card"
-      hx-swap="outerHTML"
-      class="flex-1 bg-red-700 hover:bg-red-800 active:bg-red-900 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-      {% if state.state.value == 'off' %}disabled{% endif %}>
-      ■ Parar
-    </button>
   </div>
 </div>

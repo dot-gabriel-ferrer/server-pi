@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Server Pi — Home{% endblock %}
+
+{% block extra_head %}
+  {{ super() }}
+  <style>
+    .home-grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .home-hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      padding: 1.5rem;
+    }
+
+    .home-title {
+      margin: 0;
+      font-size: clamp(3rem, 7vw, 5rem);
+      line-height: 0.95;
+      letter-spacing: -0.06em;
+      color: var(--sp-t1);
+      opacity: 0;
+      animation: sp-hero-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: 0.2s;
+      animation-play-state: paused;
+    }
+
+    .home-subtitle {
+      margin-top: 0.85rem;
+      color: var(--sp-t2);
+      font-size: 1rem;
+      max-width: 28rem;
+      opacity: 0;
+      animation: sp-hero-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: 0.3s;
+      animation-play-state: paused;
+    }
+
+    .home-time-wrap {
+      text-align: right;
+      min-width: 15rem;
+    }
+
+    .home-time {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      color: var(--sp-t1);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .home-date {
+      margin-top: 0.65rem;
+      color: var(--sp-t2);
+      font-size: 0.95rem;
+    }
+
+    .home-section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .home-project-grid {
+      display: grid;
+      gap: 1.25rem;
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    .home-project-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.5rem;
+      padding: 24px;
+      min-height: 300px;
+    }
+
+    .home-zone {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1;
+      font-weight: 700;
+      color: var(--sp-t1);
+      letter-spacing: -0.04em;
+    }
+
+    .home-project-desc {
+      margin-top: 0.9rem;
+      color: var(--sp-t2);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    .home-status-shell {
+      border: 1px solid var(--sp-border);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 1rem;
+      min-height: 100px;
+    }
+
+    .home-stats-bar {
+      opacity: 0;
+      animation: sp-hero-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: 0.45s;
+      animation-play-state: paused;
+    }
+
+    body.sp-ready .home-title,
+    body.sp-ready .home-subtitle,
+    body.sp-ready .home-stats-bar {
+      animation-play-state: running;
+    }
+
+    @keyframes sp-hero-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (min-width: 1024px) {
+      .home-project-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      .home-time-wrap {
+        text-align: left;
+        min-width: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .home-title,
+      .home-subtitle,
+      .home-stats-bar {
+        opacity: 1;
+        animation: none;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="home-grid" x-data="{ now: new Date() }" x-init="setInterval(() => now = new Date(), 1000)">
+  <section class="sp-card home-hero">
+    <div>
+      <p class="sp-section-title">Premium dashboard</p>
+      <h1 class="home-title">Server Pi</h1>
+      <p class="home-subtitle">Local-first IoT Platform</p>
+    </div>
+    <div class="home-time-wrap">
+      <p class="sp-section-title">Current time</p>
+      <div class="home-time" x-text="now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })"></div>
+      <p class="home-date" x-text="now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })"></p>
+    </div>
+  </section>
+
+  <div
+    hx-get="/ui/partials/system-stats"
+    hx-trigger="load"
+    hx-target="this"
+    hx-swap="outerHTML"
+    class="sp-card home-stats-bar flex items-center gap-6 p-4 text-sm text-[var(--sp-t2)]">
+    Loading system stats…
+  </div>
+
+  <section class="home-grid">
+    <div class="home-section-head">
+      <div>
+        <p class="sp-section-title">IoT projects</p>
+        <h2 class="text-[28px] font-semibold tracking-[-0.04em] text-[var(--sp-t1)]">Zone surfaces</h2>
+      </div>
+      <p class="text-sm text-[var(--sp-t2)]">Three local environments with live telemetry.</p>
+    </div>
+
+    <div class="home-project-grid">
+      {% for project in [
+        {"name": "Greenhouse", "zone": "greenhouse", "description": "Climate, irrigation, and sensor health for the primary greenhouse environment."},
+        {"name": "Garden", "zone": "garden", "description": "Outdoor telemetry and irrigation control for beds, lines, and weather-aware automation."},
+        {"name": "Indoor", "zone": "indoor", "description": "Controlled interior monitoring for utility sensors, air quality, and connected equipment."}
+      ] %}
+      <article class="sp-card home-project-card">
+        <div>
+          <p class="sp-section-title">Zone</p>
+          <h3 class="home-zone">{{ project.name }}</h3>
+          <p class="home-project-desc">{{ project.description }}</p>
+        </div>
+
+        <div class="space-y-4">
+          <div
+            hx-get="/ui/partials/sensors?zone={{ project.zone }}&compact=true"
+            hx-trigger="load"
+            hx-target="this"
+            hx-swap="outerHTML"
+            class="home-status-shell">
+            <p class="text-sm text-[var(--sp-t2)]">Loading live sensor count…</p>
+          </div>
+
+          <a href="/dashboard?zone={{ project.zone }}" class="sp-btn-accent w-full justify-center py-2">
+            View Dashboard →
+          </a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="home-grid">
+    <div class="home-section-head">
+      <div>
+        <p class="sp-section-title">Services</p>
+        <h2 class="text-[28px] font-semibold tracking-[-0.04em] text-[var(--sp-t1)]">Container controls</h2>
+      </div>
+      <p class="text-sm text-[var(--sp-t2)]">Docker-backed runtime inventory with live control actions.</p>
+    </div>
+
+    <div
+      hx-get="/ui/partials/services"
+      hx-trigger="load"
+      hx-target="this"
+      hx-swap="outerHTML"
+      class="sp-card p-5 text-sm text-[var(--sp-t2)]">
+      Loading services…
+    </div>
+  </section>
+</div>
+{% endblock %}
