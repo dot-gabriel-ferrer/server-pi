@@ -25,14 +25,16 @@ class IrrigationRuleEngine:
         reading: SensorReading,
         now: datetime,
         last_irrigation_at: datetime | None,
+        ambient_reading: SensorReading | None = None,
     ) -> RuleDecision:
         """Evaluate whether irrigation should start.
 
         Args:
             rule: Irrigation rule definition.
-            reading: Latest sensor reading.
+            reading: Latest soil sensor reading.
             now: Current UTC timestamp.
             last_irrigation_at: Last irrigation timestamp.
+            ambient_reading: Optional ambient sensor reading for multi-condition checks.
 
         Returns:
             RuleDecision: Evaluation output.
@@ -58,7 +60,29 @@ class IrrigationRuleEngine:
             if now < min_next:
                 return RuleDecision(False, "cooldown active")
 
-        return RuleDecision(True, "soil moisture below threshold")
+        if ambient_reading is not None:
+            if (
+                rule.weather.max_ambient_temp_c is not None
+                and ambient_reading.temperature_c is not None
+                and ambient_reading.temperature_c > rule.weather.max_ambient_temp_c
+            ):
+                return RuleDecision(
+                    False,
+                    f"ambient temp {ambient_reading.temperature_c}°C exceeds max "
+                    f"{rule.weather.max_ambient_temp_c}°C",
+                )
+            if (
+                rule.weather.min_ambient_humidity_pct is not None
+                and ambient_reading.humidity_pct is not None
+                and ambient_reading.humidity_pct > rule.weather.min_ambient_humidity_pct
+            ):
+                return RuleDecision(
+                    False,
+                    f"ambient humidity {ambient_reading.humidity_pct}% exceeds gate "
+                    f"{rule.weather.min_ambient_humidity_pct}%",
+                )
+
+        return RuleDecision(True, "all conditions met")
 
     def telemetry_expired(
         self, rule: IrrigationRule, now: datetime, last_telemetry_at: datetime | None

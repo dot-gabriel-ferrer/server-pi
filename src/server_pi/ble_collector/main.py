@@ -50,10 +50,13 @@ class BleCollector:
 
     async def _run(self) -> None:
         while True:
-            devices = await BleakScanner.discover(
-                timeout=self._config.scan_interval_sec, return_adv=True
-            )
-            self._process_scan(devices)
+            try:
+                devices = await BleakScanner.discover(
+                    timeout=self._config.scan_interval_sec, return_adv=True
+                )
+                await asyncio.to_thread(self._process_scan, devices)
+            except Exception:  # noqa: BLE001
+                logger.exception("ble_scan_error")
             await asyncio.sleep(self._config.scan_interval_sec)
 
     def _process_scan(self, devices: dict[str, tuple[BLEDevice, AdvertisementData]]) -> None:

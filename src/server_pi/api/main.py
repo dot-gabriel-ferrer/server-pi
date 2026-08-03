@@ -6,6 +6,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,7 +19,9 @@ from server_pi.api.camera import CameraService
 from server_pi.common.config import settings
 from server_pi.common.models import (
     ActuatorCommandRequest,
+    ActuatorMode,
     ActuatorState,
+    CommandAction,
     EventRecord,
     EventType,
     IrrigationRule,
@@ -38,7 +41,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 logger = logging.getLogger("server_pi.api")
-templates = Jinja2Templates(directory="src/server_pi/api/templates")
+templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 
 def _build_repo() -> TimeSeriesRepository:
@@ -225,3 +228,133 @@ def events(
 def camera_info(runtime: AppState = Depends(get_runtime)) -> JSONResponse:
     """Return configured camera stream/snapshot metadata."""
     return JSONResponse(content=runtime.camera.info().model_dump(mode="json"))
+
+
+# ---------------------------------------------------------------------------
+# UI partial routes (HTMX fragments)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/ui/partials/sensors", response_class=HTMLResponse)
+def ui_partial_sensors(
+    request: Request,
+    zone: str = Query(..., min_length=1),
+    runtime: AppState = Depends(get_runtime),
+) -> HTMLResponse:
+    """Render sensor readings card fragment for HTMX polling."""
+    readings = runtime.timeseries.get_latest_by_zone(zone)
+    return templates.TemplateResponse(
+        "partials/sensors.html",
+        {"request": request, "readings": readings, "zone": zone, "now": datetime.now(UTC)},
+    )
+
+
+@app.get("/ui/partials/actuator", response_class=HTMLResponse)
+def ui_partial_actuator(
+    request: Request,
+    actuator_id: str = Query(..., min_length=1),
+    zone: str = Query(..., min_length=1),
+    runtime: AppState = Depends(get_runtime),
+) -> HTMLResponse:
+    """Render actuator status card fragment for HTMX polling."""
+    state = runtime.state_repo.get_actuator_state(actuator_id) or runtime.ensure_default_off(
+        actuator_id, zone
+    )
+    return templates.TemplateResponse(
+        "partials/actuator.html",
+        {"request": request, "state": state, "actuator_id": actuator_id, "zone": zone},
+    )
+
+
+@app.get("/ui/partials/events", response_class=HTMLResponse)
+def ui_partial_events(
+    request: Request,
+    limit: int = Query(20, ge=1, le=200),
+    runtime: AppState = Depends(get_runtime),
+) -> HTMLResponse:
+    """Render recent events list fragment for HTMX polling."""
+    events = runtime.timeseries.get_events(limit=limit)
+    return templates.TemplateResponse(
+        "partials/events.html",
+        {"request": request, "events": events, "limit": limit},
+    )
+
+
+@app.get("/ui/partials/camera", response_class=HTMLResponse)
+def ui_partial_camera(
+    request: Request,
+    runtime: AppState = Depends(get_runtime),
+) -> HTMLResponse:
+    """Render camera card fragment for HTMX polling."""
+    camera_info_obj = runtime.camera.info()
+    return templates.TemplateResponse(
+        "partials/camera.html",
+        {
+            "request": request,
+            "camera": camera_info_obj,
+            "now_ts": int(datetime.now(UTC).timestamp()),
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# UI actuator control routes (HTMX form POST → return updated card fragment)
+# ---------------------------------------------------------------------------
+
+
+@app.post("/ui/actuators/{actuator_id}/on", response_class=HTMLResponse)
+def ui_actuator_on(
+    request: Request,
+    actuator_id: str,
+    zone: str = Query(..., min_length=1),
+    duration_sec: int = Query(30, ge=1, le=3600),
+    runtime: AppState = Depends(get_runtime),
+) -> HTMLResponse:
+    """Activate actuator via UI and return updated card fragment."""
+    now = datetime.now(UTC)
+    try:
+        state = runtime.command_actuator(
+            actuator_id,
+            ActuatorCommandRequest(
+                ts=now,
+                zone=zone,
+                actor="portal-ui",
+                reason="manual button",
+                action=CommandAction.on,
+                duration_sec=duration_sec,
+                mode=ActuatorMode.manual,
+            ),
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return templates.TemplateResponse(
+        "partials/actuator.html",
+        {"request": request, "state": state, "actuator_id": actuator_id, "zone": zone},
+    )
+
+
+@app.post("/ui/actuators/{actuator_id}/off", response_class=HTMLResponse)
+def ui_actuator_off(
+    request: Request,
+    actuator_id: str,
+    zone: str = Query(..., min_length=1),
+    runtime: AppState = Depends(get_runtime),
+) -> HTMLResponse:
+    """Deactivate actuator via UI and return updated card fragment."""
+    now = datetime.now(UTC)
+    state = runtime.command_actuator(
+        actuator_id,
+        ActuatorCommandRequest(
+            ts=now,
+            zone=zone,
+            actor="portal-ui",
+            reason="manual stop",
+            action=CommandAction.off,
+            duration_sec=0,
+            mode=ActuatorMode.manual,
+        ),
+    )
+    return templates.TemplateResponse(
+        "partials/actuator.html",
+        {"request": request, "state": state, "actuator_id": actuator_id, "zone": zone},
+    )

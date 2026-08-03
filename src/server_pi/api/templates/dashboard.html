@@ -2,90 +2,143 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <title>Server Pi Cultivo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Server Pi — Cultivo Local-First</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <style>
-      body { font-family: Arial, sans-serif; margin: 1rem 2rem; }
-      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-      .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; }
-      button { padding: 0.5rem 1rem; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { border-bottom: 1px solid #eee; text-align: left; padding: 0.4rem; }
-      img { max-width: 100%; border-radius: 6px; }
+      [hx-get][hx-trigger]:not([data-loaded]) { transition: opacity 0.2s; }
     </style>
   </head>
-  <body>
-    <h1>Portal cultivo local-first</h1>
-    <div class="grid">
-      <div class="card">
-        <h2>Variables en tiempo real</h2>
-        <pre id="latest">Cargando...</pre>
+  <body class="bg-gray-950 text-gray-100 min-h-screen p-4 md:p-6">
+
+    <header class="mb-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">🌱 Server Pi &mdash; Cultivo Local-First</h1>
+        <p class="text-gray-400 text-sm mt-0.5">Panel de monitorización en tiempo real</p>
       </div>
-      <div class="card">
-        <h2>Actuador riego</h2>
-        <pre id="actuator">Cargando...</pre>
-        <button onclick="manualWater()">Riego manual (30s)</button>
+      <span id="clock" class="text-xs text-gray-500 font-mono"></span>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <!-- Sensores en tiempo real (HTMX polling) -->
+      <div
+        hx-get="/ui/partials/sensors?zone=greenhouse"
+        hx-trigger="load, every 10s"
+        hx-target="this"
+        hx-swap="outerHTML"
+        class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+        <p class="text-gray-500 text-sm animate-pulse">Cargando sensores…</p>
       </div>
-      <div class="card">
-        <h2>Histórico (últimas 2h)</h2>
-        <table>
-          <thead><tr><th>ts</th><th>temp</th><th>hum</th><th>suelo</th></tr></thead>
-          <tbody id="history"></tbody>
-        </table>
+
+      <!-- Actuador de riego (HTMX polling) -->
+      <div
+        id="actuator-card"
+        hx-get="/ui/partials/actuator?actuator_id=irrigation-main&zone=greenhouse"
+        hx-trigger="load, every 10s"
+        hx-target="this"
+        hx-swap="outerHTML"
+        class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+        <p class="text-gray-500 text-sm animate-pulse">Cargando actuador…</p>
       </div>
-      <div class="card">
-        <h2>Cámara</h2>
-        <a id="stream" target="_blank">Abrir stream RTSP</a>
-        <div><img id="snapshot" alt="snapshot" /></div>
+
+      <!-- Gráfico histórico Chart.js (últimas 2 h) -->
+      <div class="md:col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-4">
+        <h2 class="font-semibold mb-3">📈 Histórico últimas 2 h</h2>
+        <canvas id="histChart" height="80"></canvas>
       </div>
+
+      <!-- Cámara (HTMX polling) -->
+      <div
+        hx-get="/ui/partials/camera"
+        hx-trigger="load, every 30s"
+        hx-target="this"
+        hx-swap="outerHTML"
+        class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+        <p class="text-gray-500 text-sm animate-pulse">Cargando cámara…</p>
+      </div>
+
+      <!-- Eventos recientes (HTMX polling) -->
+      <div
+        hx-get="/ui/partials/events?limit=20"
+        hx-trigger="load, every 15s"
+        hx-target="this"
+        hx-swap="outerHTML"
+        class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+        <p class="text-gray-500 text-sm animate-pulse">Cargando eventos…</p>
+      </div>
+
     </div>
 
     <script>
-      const zone = "greenhouse";
-      const actuatorId = "irrigation-main";
+      // Live clock
+      function updateClock() {
+        document.getElementById('clock').textContent = new Date().toUTCString().replace(' GMT', ' UTC');
+      }
+      updateClock();
+      setInterval(updateClock, 1000);
 
-      async function refresh() {
-        const latest = await fetch(`/api/v1/sensors/latest?zone=${zone}`).then(r => r.json());
-        document.getElementById('latest').textContent = JSON.stringify(latest, null, 2);
+      // Chart.js: historical temperature / humidity / soil moisture
+      let histChart = null;
 
-        const act = await fetch(`/api/v1/actuators/${actuatorId}/state?zone=${zone}`).then(r => r.json());
-        document.getElementById('actuator').textContent = JSON.stringify(act, null, 2);
+      async function loadHistChart() {
+        const zone = 'greenhouse';
+        const latest = await fetch(`/api/v1/sensors/latest?zone=${zone}`)
+          .then(r => r.ok ? r.json() : [])
+          .catch(() => []);
+        const deviceId = latest?.[0]?.device_id;
+        if (!deviceId) return;
 
         const to = new Date().toISOString();
         const from = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
-        const deviceId = latest?.[0]?.device_id;
-        if (deviceId) {
-          const hist = await fetch(`/api/v1/sensors/history?device_id=${encodeURIComponent(deviceId)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`).then(r => r.json());
-          document.getElementById('history').innerHTML = hist.slice(-20).map(row => `<tr><td>${row.ts}</td><td>${row.temperature_c ?? ''}</td><td>${row.humidity_pct ?? ''}</td><td>${row.soil_moisture_pct ?? ''}</td></tr>`).join('');
-        }
+        const hist = await fetch(
+          `/api/v1/sensors/history?device_id=${encodeURIComponent(deviceId)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+        ).then(r => r.ok ? r.json() : []).catch(() => []);
 
-        const camera = await fetch(`/api/v1/camera`).then(r => r.json());
-        document.getElementById('stream').href = camera.stream_url || '#';
-        document.getElementById('stream').textContent = camera.stream_url || 'Sin stream configurado';
-        if (camera.latest_snapshot_url) {
-          document.getElementById('snapshot').src = camera.latest_snapshot_url + '?t=' + Date.now();
-        }
-      }
+        if (!hist.length) return;
 
-      async function manualWater() {
-        if (!confirm('¿Confirmas activar riego manual por 30 segundos?')) return;
-        await fetch(`/api/v1/actuators/${actuatorId}/command`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            ts: new Date().toISOString(),
-            zone,
-            actor: 'portal-ui',
-            reason: 'manual button',
-            action: 'on',
-            duration_sec: 30,
-            mode: 'manual'
-          })
+        const labels = hist.map(r => new Date(r.ts).toLocaleTimeString());
+        const mkDataset = (label, key, color) => ({
+          label,
+          data: hist.map(r => r[key] ?? null),
+          borderColor: color,
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          spanGaps: true,
+          pointRadius: 2,
         });
-        await refresh();
+
+        const ctx = document.getElementById('histChart');
+        if (!ctx) return;
+        if (histChart) histChart.destroy();
+        histChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              mkDataset('Temperatura (°C)', 'temperature_c', '#f97316'),
+              mkDataset('Humedad ambiental (%)', 'humidity_pct', '#3b82f6'),
+              mkDataset('Humedad suelo (%)', 'soil_moisture_pct', '#22c55e'),
+            ],
+          },
+          options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+              x: { ticks: { color: '#9ca3af', maxTicksLimit: 12 }, grid: { color: '#1f2937' } },
+              y: { ticks: { color: '#9ca3af' }, grid: { color: '#1f2937' } },
+            },
+            plugins: {
+              legend: { labels: { color: '#e5e7eb', boxWidth: 12 } },
+            },
+          },
+        });
       }
 
-      refresh();
-      setInterval(refresh, 15000);
+      loadHistChart();
+      setInterval(loadHistChart, 30000);
     </script>
   </body>
 </html>
