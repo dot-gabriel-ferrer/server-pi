@@ -398,16 +398,31 @@ def ui_rule_update(
     runtime: AppState = Depends(get_runtime),
 ) -> HTMLResponse:
     """Update irrigation rule via UI form and return updated card fragment."""
-    rule = IrrigationRule(
-        zone=zone,
-        enabled=enabled,
-        soil_moisture_threshold_pct=soil_moisture_threshold_pct,
-        allowed_start_hour_utc=allowed_start_hour_utc,
-        allowed_end_hour_utc=allowed_end_hour_utc,
-        cooldown_minutes=cooldown_minutes,
-        max_duration_sec=max_duration_sec,
-        telemetry_timeout_minutes=telemetry_timeout_minutes,
-    )
+    existing = runtime.state_repo.get_rule(actuator_id)
+    if existing is not None:
+        rule = existing.model_copy(
+            update={
+                "zone": zone,
+                "enabled": enabled,
+                "soil_moisture_threshold_pct": soil_moisture_threshold_pct,
+                "allowed_start_hour_utc": allowed_start_hour_utc,
+                "allowed_end_hour_utc": allowed_end_hour_utc,
+                "cooldown_minutes": cooldown_minutes,
+                "max_duration_sec": max_duration_sec,
+                "telemetry_timeout_minutes": telemetry_timeout_minutes,
+            }
+        )
+    else:
+        rule = IrrigationRule(
+            zone=zone,
+            enabled=enabled,
+            soil_moisture_threshold_pct=soil_moisture_threshold_pct,
+            allowed_start_hour_utc=allowed_start_hour_utc,
+            allowed_end_hour_utc=allowed_end_hour_utc,
+            cooldown_minutes=cooldown_minutes,
+            max_duration_sec=max_duration_sec,
+            telemetry_timeout_minutes=telemetry_timeout_minutes,
+        )
     runtime.upsert_rule(actuator_id, rule)
     return templates.TemplateResponse(
         "partials/rule.html",
