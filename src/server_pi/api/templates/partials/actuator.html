@@ -33,7 +33,7 @@
   <div class="flex gap-2 items-end">
     <div class="flex-1">
       <label class="block text-xs text-gray-500 mb-1">Duración</label>
-      <select id="dur-{{ actuator_id }}"
+      <select id="dur-{{ actuator_id }}" name="duration_sec"
         class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
         <option value="30">30 s</option>
         <option value="60">1 min</option>
@@ -42,7 +42,11 @@
       </select>
     </div>
     <button
-      onclick="(function(){var d=document.getElementById('dur-{{ actuator_id }}').value;htmx.ajax('POST','/ui/actuators/{{ actuator_id }}/on?zone={{ zone }}&duration_sec='+d,{target:'#actuator-card',swap:'outerHTML',confirm:'¿Activar riego manual por '+d+' segundos?'});})();"
+      hx-post="/ui/actuators/{{ actuator_id }}/on?zone={{ zone }}"
+      hx-include="#dur-{{ actuator_id }}"
+      hx-target="#actuator-card"
+      hx-swap="outerHTML"
+      hx-confirm="¿Activar riego manual por el tiempo seleccionado?"
       class="flex-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       {% if state.state.value == 'on' %}disabled{% endif %}>
       ▶ Riego
