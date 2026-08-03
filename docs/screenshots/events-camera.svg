@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="500" viewBox="0 0 1100 500">
+  <defs>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", system-ui, sans-serif; }
+      .mono { font-family: "SF Mono", "Fira Code", ui-monospace, monospace; }
+    </style>
+    <linearGradient id="brandGrad5" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00c2ff"/>
+      <stop offset="100%" stop-color="#0099cc"/>
+    </linearGradient>
+    <linearGradient id="camGrad2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a2a1a"/>
+      <stop offset="60%" stop-color="#0f1f0f"/>
+      <stop offset="100%" stop-color="#0a150a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1100" height="500" fill="#070709"/>
+
+  <!-- Nav -->
+  <rect width="1100" height="52" fill="rgba(7,7,9,0.92)"/>
+  <rect y="51" width="1100" height="1" fill="rgba(255,255,255,0.06)"/>
+  <rect x="24" y="14" width="24" height="24" rx="7" fill="url(#brandGrad5)"/>
+  <text x="36" y="30" font-size="11" font-weight="700" fill="#031117" text-anchor="middle">SP</text>
+  <text x="56" y="31" font-size="15" font-weight="500" fill="#f5f5f7">Server Pi</text>
+  <text x="140" y="31" font-size="14" fill="#98989d">Home</text>
+  <text x="200" y="31" font-size="14" fill="#f5f5f7" font-weight="500">Dashboard</text>
+  <rect x="196" y="51" width="74" height="1" fill="#00c2ff"/>
+  <text x="298" y="31" font-size="14" fill="#98989d">Resources</text>
+  <rect x="940" y="13" width="94" height="26" rx="13" fill="rgba(19,19,26,0.72)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="957" cy="26" r="3" fill="#34d058"/>
+  <text x="966" y="30" font-size="12" font-weight="500" fill="#f5f5f7">Healthy</text>
+  <text x="1050" y="30" font-size="11" fill="#98989d" class="mono">10:36 UTC</text>
+
+  <!-- CAMERA CARD -->
+  <rect x="16" y="68" width="360" height="420" rx="16" fill="#13131a" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="36" y="92" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2">VISUAL FEED</text>
+  <text x="36" y="116" font-size="16" font-weight="600" fill="#f5f5f7">Camera · greenhouse</text>
+  <text x="356" y="92" font-size="12" fill="#00c2ff" text-anchor="end">View Stream ↗</text>
+
+  <!-- Camera snapshot frame -->
+  <rect x="28" y="128" width="336" height="252" rx="12" fill="url(#camGrad2)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <!-- Simulated plant scene -->
+  <ellipse cx="176" cy="210" rx="55" ry="75" fill="rgba(52,208,88,0.09)"/>
+  <ellipse cx="120" cy="245" rx="38" ry="58" fill="rgba(52,208,88,0.07)"/>
+  <ellipse cx="234" cy="240" rx="46" ry="50" fill="rgba(52,208,88,0.06)"/>
+  <!-- Stem -->
+  <line x1="176" y1="255" x2="176" y2="380" stroke="rgba(52,208,88,0.25)" stroke-width="4"/>
+  <line x1="120" y1="270" x2="120" y2="380" stroke="rgba(52,208,88,0.2)" stroke-width="3"/>
+  <line x1="234" y1="265" x2="234" y2="380" stroke="rgba(52,208,88,0.2)" stroke-width="3"/>
+  <!-- Pot outline -->
+  <rect x="60" y="340" width="240" height="40" rx="4" fill="rgba(100,80,60,0.3)" stroke="rgba(100,80,60,0.5)" stroke-width="1"/>
+
+  <!-- Timestamp overlay on image -->
+  <rect x="30" y="358" width="185" height="18" rx="3" fill="rgba(0,0,0,0.5)"/>
+  <text x="38" y="371" font-size="10" fill="#f5f5f7" class="mono">2026-08-03 10:35:58 UTC</text>
+
+  <text x="36" y="398" font-size="13" fill="#98989d">Snapshot: 2026-08-03 10:35:58 UTC</text>
+  <text x="36" y="416" font-size="12" fill="#6e6e73">RTSP stream: rtsp://192.168.1.50/live</text>
+
+  <!-- Camera zone info -->
+  <rect x="28" y="428" width="336" height="44" rx="12" fill="rgba(255,255,255,0.01)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="44" y="448" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="1">ZONE</text>
+  <text x="120" y="448" font-size="12" fill="#f5f5f7" class="mono">greenhouse</text>
+  <text x="44" y="464" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="1">RETENTION</text>
+  <text x="140" y="464" font-size="12" fill="#f5f5f7">7 days</text>
+
+  <!-- EVENTS CARD -->
+  <rect x="392" y="68" width="692" height="420" rx="16" fill="#13131a" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="412" y="92" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2">ACTIVITY</text>
+  <text x="412" y="116" font-size="16" font-weight="600" fill="#f5f5f7">Events</text>
+  <text x="1064" y="92" font-size="12" fill="#98989d" text-anchor="end">last 20</text>
+
+  <!-- Event type legend -->
+  <circle cx="440" cy="110" r="9" fill="rgba(255,255,255,0.02)" stroke="rgba(52,208,88,0.3)" stroke-width="1"/>
+  <text x="440" y="114" font-size="8" font-weight="600" fill="#34d058" text-anchor="middle">IR</text>
+  <text x="454" y="114" font-size="11" fill="#6e6e73">Irrigation</text>
+  <circle cx="536" cy="110" r="9" fill="rgba(255,255,255,0.02)" stroke="rgba(0,194,255,0.3)" stroke-width="1"/>
+  <text x="536" y="114" font-size="8" font-weight="600" fill="#00c2ff" text-anchor="middle">AC</text>
+  <text x="550" y="114" font-size="11" fill="#6e6e73">Actuator</text>
+  <circle cx="630" cy="110" r="9" fill="rgba(255,255,255,0.02)" stroke="rgba(245,166,35,0.3)" stroke-width="1"/>
+  <text x="630" y="114" font-size="8" font-weight="600" fill="#f5a623" text-anchor="middle">AL</text>
+  <text x="644" y="114" font-size="11" fill="#6e6e73">Alert</text>
+  <circle cx="718" cy="110" r="9" fill="rgba(255,255,255,0.02)" stroke="rgba(255,95,87,0.3)" stroke-width="1"/>
+  <text x="718" y="114" font-size="8" font-weight="600" fill="#ff5f57" text-anchor="middle">ER</text>
+  <text x="732" y="114" font-size="11" fill="#6e6e73">Error</text>
+  <circle cx="800" cy="110" r="9" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="800" y="114" font-size="8" font-weight="600" fill="#98989d" text-anchor="middle">SY</text>
+  <text x="814" y="114" font-size="11" fill="#6e6e73">System</text>
+
+  <!-- Event 1 — Irrigation -->
+  <line x1="412" y1="130" x2="1064" y2="130" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="430" cy="148" r="9" fill="rgba(255,255,255,0.02)" stroke="rgba(52,208,88,0.3)" stroke-width="1"/>
+  <text x="430" y="152" font-size="8" font-weight="600" fill="#34d058" text-anchor="middle">IR</text>
+  <text x="452" y="145" font-size="13" fill="#f5f5f7">Irrigation cycle completed — greenhouse · 60 s active</text>
+  <text x="452" y="161" font-size="11" fill="#98989d">irrigation-main · rules-engine</text>
+  <text x="1060" y="151" font-size="11" fill="#6e6e73" text-anchor="end" class="mono">10:35:12</text>
+
+  <!-- Event 2 — Actuator -->
+  <line x1="412" y1="172" x2="1064" y2="172" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="430" cy="190" r="9" fill="rgba(255,255,255,0.02)" stroke="rgba(0,194,255,0.3)" stroke-width="1"/>
+  <text x="430" y="194" font-size="8" font-weight="600" fill="#00c2ff" text-anchor="middle">AC</text>
+  <text x="452" y="187" font-size="13" fill="#f5f5f7">Actuator irrigation-main → OFF (safety timeout)</text>
+  <text x="452" y="203" font-size="11" fill="#98989d">irrigation-main · safety-watchdog</text>
+  <text x="1060" y="193" font-size="11" fill="#6e6e73" text-anchor="end" class="mono">10:35:12</text>
+
+  <!-- Event 3 — Actuator ON -->
+  <line x1="412" y1="214" x2="1064" y2="214" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="430" cy="232" r="9" fill="rgba(255,255,255,0.02)" stroke="rgba(0,194,255,0.3)" stroke-width="1"/>
+  <text x="430" y="236" font-size="8" font-weight="600" fill="#00c2ff" text-anchor="middle">AC</text>
+  <text x="452" y="229" font-size="13" fill="#f5f5f7">Actuator irrigation-main → ON · 60 s (auto rule)</text>
+  <text x="452" y="245" font-size="11" fill="#98989d">irrigation-main · rules-engine</text>
+  <text x="1060" y="235" font-size="11" fill="#6e6e73" text-anchor="end" class="mono">10:34:55</text>
+
+  <!-- Event 4 — Alert -->
+  <line x1="412" y1="256" x2="1064" y2="256" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="430" cy="274" r="9" fill="rgba(255,255,255,0.02)" stroke="rgba(245,166,35,0.3)" stroke-width="1"/>
+  <text x="430" y="278" font-size="8" font-weight="600" fill="#f5a623" text-anchor="middle">AL</text>
+  <text x="452" y="271" font-size="13" fill="#f5f5f7">Soil moisture below threshold (28.5% &lt; 35%) · triggering rule</text>
+  <text x="452" y="287" font-size="11" fill="#98989d">ble-aa-bb-cc-dd · rules-engine</text>
+  <text x="1060" y="277" font-size="11" fill="#6e6e73" text-anchor="end" class="mono">10:34:50</text>
+
+  <!-- Event 5 — System -->
+  <line x1="412" y1="298" x2="1064" y2="298" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="430" cy="316" r="9" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="430" y="320" font-size="8" font-weight="600" fill="#98989d" text-anchor="middle">SY</text>
+  <text x="452" y="313" font-size="13" fill="#f5f5f7">Telemetry update from ble-aa-bb-cc-dd published to MQTT</text>
+  <text x="452" y="329" font-size="11" fill="#98989d">ble-aa-bb-cc-dd · ble-collector</text>
+  <text x="1060" y="319" font-size="11" fill="#6e6e73" text-anchor="end" class="mono">10:34:50</text>
+
+  <!-- Event 6 — Irrigation previous cycle -->
+  <line x1="412" y1="340" x2="1064" y2="340" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="430" cy="358" r="9" fill="rgba(255,255,255,0.02)" stroke="rgba(52,208,88,0.3)" stroke-width="1"/>
+  <text x="430" y="362" font-size="8" font-weight="600" fill="#34d058" text-anchor="middle">IR</text>
+  <text x="452" y="355" font-size="13" fill="#6e6e73">Irrigation cycle completed — greenhouse · 60 s active</text>
+  <text x="452" y="371" font-size="11" fill="#6e6e73">irrigation-main · rules-engine</text>
+  <text x="1060" y="361" font-size="11" fill="#6e6e73" text-anchor="end" class="mono">10:14:02</text>
+
+  <!-- Event 7 — System start -->
+  <line x1="412" y1="382" x2="1064" y2="382" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="430" cy="400" r="9" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="430" y="404" font-size="8" font-weight="600" fill="#98989d" text-anchor="middle">SY</text>
+  <text x="452" y="397" font-size="13" fill="#6e6e73">API service started — MQTT connection established</text>
+  <text x="452" y="413" font-size="11" fill="#6e6e73">system · server-pi-api</text>
+  <text x="1060" y="403" font-size="11" fill="#6e6e73" text-anchor="end" class="mono">07:02:14</text>
+
+  <!-- Event 8 — Zigbee join -->
+  <line x1="412" y1="424" x2="1064" y2="424" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="430" cy="442" r="9" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="430" y="446" font-size="8" font-weight="600" fill="#98989d" text-anchor="middle">SY</text>
+  <text x="452" y="439" font-size="13" fill="#6e6e73">Zigbee device joined network: zigbee-0x1234abcd</text>
+  <text x="452" y="455" font-size="11" fill="#6e6e73">zigbee-0x1234abcd · zigbee2mqtt</text>
+  <text x="1060" y="445" font-size="11" fill="#6e6e73" text-anchor="end" class="mono">07:01:58</text>
+</svg>

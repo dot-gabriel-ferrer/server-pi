@@ -1,119 +1,145 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560">
   <defs>
     <style>
-      text { font-family: ui-sans-serif, system-ui, sans-serif; }
-      .mono { font-family: ui-monospace, monospace; }
+      text { font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", system-ui, sans-serif; }
+      .mono { font-family: "SF Mono", "Fira Code", ui-monospace, monospace; }
     </style>
+    <linearGradient id="brandGrad3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00c2ff"/>
+      <stop offset="100%" stop-color="#0099cc"/>
+    </linearGradient>
   </defs>
 
-  <!-- Background -->
-  <rect width="800" height="480" fill="#030712"/>
+  <rect width="1000" height="560" fill="#070709"/>
 
-  <!-- Top bar -->
-  <rect width="800" height="48" fill="#030712" stroke="#1f2937" stroke-width="1"/>
-  <text x="16" y="30" font-size="15" font-weight="700" fill="#f3f4f6">🌱 Server Pi</text>
-  <text x="106" y="30" font-size="12" fill="#6b7280">Plataforma IoT local-first</text>
-  <rect x="585" y="12" width="110" height="22" rx="4" fill="#1f2937" stroke="#374151" stroke-width="1"/>
-  <text x="598" y="27" font-size="10" fill="#d1d5db">greenhouse ▾</text>
-  <rect x="702" y="12" width="58" height="22" rx="11" fill="#052e16" stroke="#166534" stroke-width="1"/>
-  <text x="714" y="27" font-size="10" font-weight="600" fill="#4ade80">● OK</text>
+  <!-- Nav -->
+  <rect width="1000" height="52" fill="rgba(7,7,9,0.92)"/>
+  <rect y="51" width="1000" height="1" fill="rgba(255,255,255,0.06)"/>
+  <rect x="20" y="14" width="24" height="24" rx="7" fill="url(#brandGrad3)"/>
+  <text x="32" y="30" font-size="11" font-weight="700" fill="#031117" text-anchor="middle">SP</text>
+  <text x="52" y="31" font-size="15" font-weight="500" fill="#f5f5f7">Server Pi</text>
+  <text x="136" y="31" font-size="14" fill="#98989d">Home</text>
+  <text x="196" y="31" font-size="14" fill="#f5f5f7" font-weight="500">Dashboard</text>
+  <rect x="192" y="51" width="74" height="1" fill="#00c2ff"/>
+  <text x="294" y="31" font-size="14" fill="#98989d">Resources</text>
+  <rect x="864" y="13" width="94" height="26" rx="13" fill="rgba(19,19,26,0.72)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="881" cy="26" r="3" fill="#34d058"/>
+  <text x="890" y="30" font-size="12" font-weight="500" fill="#f5f5f7">Healthy</text>
+  <text x="970" y="30" font-size="11" fill="#98989d" class="mono">10:36 UTC</text>
 
-  <!-- Panel heading -->
-  <text x="16" y="78" font-size="14" font-weight="600" fill="#f3f4f6">🌡️ Sensores — greenhouse</text>
+  <!-- SENSORS CARD (detailed) -->
+  <rect x="16" y="68" width="476" height="476" rx="16" fill="#13131a" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="36" y="92" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2">GREENHOUSE</text>
+  <text x="36" y="116" font-size="17" font-weight="600" fill="#f5f5f7">Sensor telemetry</text>
+  <text x="452" y="92" font-size="12" fill="#f5f5f7" text-anchor="end" font-weight="500">2 sensors</text>
+  <text x="476" y="108" font-size="11" fill="#6e6e73" text-anchor="end" class="mono">10:36:42 UTC</text>
 
-  <!-- Sensor device 1 -->
-  <rect x="16" y="88" width="380" height="166" rx="10" fill="#1f2937"/>
-  <text x="30" y="112" font-size="11" fill="#d1d5db" class="mono">ble-aa-bb-cc-dd</text>
-  <rect x="278" y="100" width="36" height="16" rx="3" fill="#374151"/>
-  <text x="284" y="112" font-size="10" fill="#9ca3af" class="mono">ble</text>
-  <circle cx="330" cy="108" r="4.5" fill="#22c55e"/>
+  <!-- Device 1 — BLE sensor (full detail) -->
+  <rect x="28" y="128" width="452" height="192" rx="12" fill="rgba(255,255,255,0.01)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="44" y="152" font-size="13" fill="#f5f5f7" class="mono">ble-aa-bb-cc-dd</text>
+  <rect x="354" y="140" width="36" height="18" rx="4" fill="#1a1a24" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="372" y="153" font-size="10" fill="#6e6e73" text-anchor="middle" class="mono">ble</text>
+  <circle cx="412" cy="149" r="4" fill="#34d058"/>
+  <text x="424" y="153" font-size="11" fill="#98989d" class="mono">10:36:35 UTC</text>
 
-  <!-- temp -->
-  <text x="30" y="140" font-size="10" fill="#6b7280">Temperatura</text>
-  <text x="296" y="140" font-size="11" font-weight="600" fill="#f97316">24.3 °C</text>
-  <rect x="30" y="144" width="358" height="5" rx="2.5" fill="#374151"/>
-  <rect x="30" y="144" width="200" height="5" rx="2.5" fill="#f97316"/>
+  <!-- Temperature -->
+  <text x="44" y="182" font-size="10" font-weight="600" fill="#6e6e73" letter-spacing="1">TEMPERATURE</text>
+  <text x="468" y="182" font-size="13" font-weight="600" fill="#f5a623" text-anchor="end">24.3 °C</text>
+  <rect x="44" y="188" width="424" height="4" rx="2" fill="#1a1a24"/>
+  <rect x="44" y="188" width="236" height="4" rx="2" fill="#f5a623"/>
 
-  <!-- humidity -->
-  <text x="210" y="140" font-size="10" fill="#6b7280">Humedad amb.</text>
-  <text x="296" y="140" font-size="11" font-weight="600" fill="#3b82f6" dx="100">62.1%</text>
-  <rect x="210" y="144" width="178" height="5" rx="2.5" fill="#374151"/>
-  <rect x="210" y="144" width="111" height="5" rx="2.5" fill="#3b82f6"/>
+  <!-- Humidity -->
+  <text x="44" y="214" font-size="10" font-weight="600" fill="#6e6e73" letter-spacing="1">HUMIDITY AMB.</text>
+  <text x="468" y="214" font-size="13" font-weight="600" fill="#00c2ff" text-anchor="end">62.1%</text>
+  <rect x="44" y="220" width="424" height="4" rx="2" fill="#1a1a24"/>
+  <rect x="44" y="220" width="263" height="4" rx="2" fill="#00c2ff"/>
 
-  <!-- soil moisture -->
-  <text x="30" y="176" font-size="10" fill="#6b7280">Humedad suelo</text>
-  <text x="296" y="176" font-size="11" font-weight="600" fill="#eab308">28.5%</text>
-  <rect x="30" y="180" width="178" height="5" rx="2.5" fill="#374151"/>
-  <rect x="30" y="180" width="50" height="5" rx="2.5" fill="#eab308"/>
+  <!-- Soil moisture (low — red) -->
+  <text x="44" y="246" font-size="10" font-weight="600" fill="#6e6e73" letter-spacing="1">SOIL MOISTURE</text>
+  <text x="468" y="246" font-size="13" font-weight="600" fill="#ff5f57" text-anchor="end">28.5%</text>
+  <rect x="44" y="252" width="424" height="4" rx="2" fill="#1a1a24"/>
+  <rect x="44" y="252" width="121" height="4" rx="2" fill="#ff5f57"/>
 
-  <!-- battery -->
-  <text x="210" y="176" font-size="10" fill="#6b7280">Batería</text>
-  <text x="360" y="176" font-size="11" font-weight="600" fill="#d1d5db">87%</text>
-  <rect x="210" y="180" width="178" height="5" rx="2.5" fill="#374151"/>
-  <rect x="210" y="180" width="155" height="5" rx="2.5" fill="#9ca3af"/>
+  <!-- Battery -->
+  <text x="44" y="278" font-size="10" font-weight="600" fill="#6e6e73" letter-spacing="1">BATTERY</text>
+  <text x="468" y="278" font-size="13" font-weight="600" fill="#98989d" text-anchor="end">87%</text>
+  <rect x="44" y="284" width="424" height="4" rx="2" fill="#1a1a24"/>
+  <rect x="44" y="284" width="369" height="4" rx="2" fill="#636366"/>
 
-  <text x="30" y="244" font-size="10" fill="#4b5563" class="mono">10:35:42 UTC</text>
+  <text x="44" y="310" font-size="11" fill="#6e6e73" class="mono">Last update: 10:36:35 UTC</text>
 
-  <!-- Sensor device 2 -->
-  <rect x="16" y="262" width="380" height="136" rx="10" fill="#1f2937"/>
-  <text x="30" y="285" font-size="11" fill="#d1d5db" class="mono">zigbee-0x1234</text>
-  <rect x="272" y="273" width="46" height="16" rx="3" fill="#374151"/>
-  <text x="278" y="285" font-size="10" fill="#9ca3af" class="mono">zigbee</text>
-  <circle cx="330" cy="281" r="4.5" fill="#22c55e"/>
+  <!-- Device 2 — Zigbee sensor -->
+  <rect x="28" y="332" width="452" height="148" rx="12" fill="rgba(255,255,255,0.01)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="44" y="356" font-size="13" fill="#f5f5f7" class="mono">zigbee-0x1234abcd</text>
+  <rect x="338" y="344" width="52" height="18" rx="4" fill="#1a1a24" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="364" y="357" font-size="10" fill="#6e6e73" text-anchor="middle" class="mono">zigbee</text>
+  <circle cx="412" cy="353" r="4" fill="#34d058"/>
+  <text x="424" y="357" font-size="11" fill="#98989d" class="mono">10:36:40 UTC</text>
 
-  <text x="30" y="312" font-size="10" fill="#6b7280">Temperatura</text>
-  <text x="296" y="312" font-size="11" font-weight="600" fill="#f97316">23.8 °C</text>
-  <rect x="30" y="316" width="358" height="5" rx="2.5" fill="#374151"/>
-  <rect x="30" y="316" width="195" height="5" rx="2.5" fill="#f97316"/>
+  <text x="44" y="388" font-size="10" font-weight="600" fill="#6e6e73" letter-spacing="1">TEMPERATURE</text>
+  <text x="468" y="388" font-size="13" font-weight="600" fill="#f5a623" text-anchor="end">23.8 °C</text>
+  <rect x="44" y="394" width="424" height="4" rx="2" fill="#1a1a24"/>
+  <rect x="44" y="394" width="230" height="4" rx="2" fill="#f5a623"/>
 
-  <text x="210" y="312" font-size="10" fill="#6b7280">Humedad amb.</text>
-  <text x="296" y="312" font-size="11" font-weight="600" fill="#3b82f6" dx="100">58.7%</text>
-  <rect x="210" y="316" width="178" height="5" rx="2.5" fill="#374151"/>
-  <rect x="210" y="316" width="104" height="5" rx="2.5" fill="#3b82f6"/>
+  <text x="44" y="420" font-size="10" font-weight="600" fill="#6e6e73" letter-spacing="1">HUMIDITY AMB.</text>
+  <text x="468" y="420" font-size="13" font-weight="600" fill="#00c2ff" text-anchor="end">58.7%</text>
+  <rect x="44" y="426" width="424" height="4" rx="2" fill="#1a1a24"/>
+  <rect x="44" y="426" width="249" height="4" rx="2" fill="#00c2ff"/>
 
-  <text x="30" y="376" font-size="10" fill="#4b5563" class="mono">10:35:50 UTC</text>
-  <text x="280" y="412" font-size="10" fill="#4b5563">Actualizado: 10:36:02 UTC</text>
+  <text x="44" y="452" font-size="11" fill="#6e6e73" class="mono">Last update: 10:36:40 UTC</text>
 
-  <!-- === Right panel: Actuador === -->
-  <rect x="412" y="60" width="372" height="200" rx="12" fill="#111827" stroke="#1f2937" stroke-width="1"/>
-  <text x="428" y="86" font-size="14" font-weight="600" fill="#f3f4f6">💧 Actuador — irrigation-main</text>
+  <!-- Stale device indicator -->
+  <rect x="28" y="492" width="452" height="44" rx="12" fill="rgba(255,255,255,0.01)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="44" y="514" font-size="12" fill="#6e6e73" class="mono">ble-ee-ff-00-11</text>
+  <rect x="338" y="500" width="36" height="18" rx="4" fill="#1a1a24"/>
+  <text x="356" y="513" font-size="10" fill="#6e6e73" text-anchor="middle" class="mono">ble</text>
+  <circle cx="412" cy="509" r="4" fill="#ff5f57"/>
+  <text x="424" y="513" font-size="11" fill="#ff5f57" class="mono">09:48:02 UTC</text>
+  <text x="44" y="528" font-size="11" fill="#6e6e73">Signal lost — last seen 48m ago</text>
 
-  <text x="428" y="132" font-size="34" font-weight="800" fill="#f87171">OFF</text>
-  <rect x="518" y="110" width="72" height="22" rx="11" fill="#374151"/>
-  <text x="530" y="124" font-size="11" fill="#9ca3af">manual</text>
+  <!-- ACTUATOR CARD (detailed, ON state) -->
+  <rect x="508" y="68" width="476" height="476" rx="16" fill="#13131a" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="528" y="92" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2">ACTUATOR</text>
+  <text x="528" y="116" font-size="14" fill="#f5f5f7" class="mono">irrigation-main</text>
+  <rect x="872" y="76" width="72" height="22" rx="11" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="908" y="91" font-size="11" fill="#98989d" text-anchor="middle">manual</text>
 
-  <text x="428" y="162" font-size="11" fill="#6b7280">Último cambio</text>
-  <text x="566" y="162" font-size="10" fill="#d1d5db" class="mono">2026-08-03 10:35:12 UTC</text>
-  <text x="428" y="182" font-size="11" fill="#6b7280">Actor</text>
-  <text x="566" y="182" font-size="11" fill="#d1d5db">portal-ui</text>
+  <!-- State ON -->
+  <text x="528" y="186" font-size="56" font-weight="700" fill="#34d058" letter-spacing="-2">ON</text>
 
-  <text x="428" y="208" font-size="10" fill="#6b7280">Duración</text>
-  <rect x="428" y="215" width="80" height="26" rx="4" fill="#1f2937" stroke="#374151"/>
-  <text x="440" y="231" font-size="11" fill="#d1d5db">30 s ▾</text>
-  <rect x="522" y="213" width="110" height="28" rx="6" fill="#2563eb"/>
-  <text x="546" y="231" font-size="12" font-weight="600" fill="white">▶ Riego</text>
-  <rect x="646" y="213" width="100" height="28" rx="6" fill="#b91c1c" opacity="0.5"/>
-  <text x="668" y="231" font-size="12" font-weight="600" fill="#fca5a5">■ Parar</text>
+  <!-- Pulse dot + countdown -->
+  <circle cx="528" cy="202" r="5" fill="#34d058"/>
+  <circle cx="528" cy="202" r="9" fill="none" stroke="#34d058" stroke-width="1" opacity="0.3"/>
+  <text x="540" y="206" font-size="13" fill="#98989d">Active · <tspan fill="#34d058" font-weight="600">2m 18s remaining</tspan></text>
 
-  <!-- Rule panel -->
-  <rect x="412" y="276" width="372" height="200" rx="12" fill="#111827" stroke="#1f2937" stroke-width="1"/>
-  <text x="428" y="302" font-size="14" font-weight="600" fill="#f3f4f6">⚙️ Regla de riego</text>
-  <rect x="724" y="285" width="48" height="20" rx="10" fill="#052e16" stroke="#166534"/>
-  <text x="731" y="298" font-size="9" font-weight="700" fill="#4ade80">ACTIVA</text>
+  <text x="528" y="240" font-size="10" font-weight="600" fill="#6e6e73" letter-spacing="1">LAST CHANGE</text>
+  <text x="528" y="256" font-size="12" fill="#f5f5f7" class="mono">2026-08-03 10:34:55 UTC</text>
+  <text x="750" y="240" font-size="10" font-weight="600" fill="#6e6e73" letter-spacing="1">LAST ACTOR</text>
+  <text x="750" y="256" font-size="12" fill="#f5f5f7">rules-engine</text>
 
-  <text x="428" y="332" font-size="10" fill="#6b7280">Umbral suelo</text>
-  <text x="428" y="348" font-size="13" font-weight="600" fill="#4ade80">35%</text>
-  <rect x="428" y="352" width="110" height="4" rx="2" fill="#374151"/>
-  <rect x="428" y="352" width="39" height="4" rx="2" fill="#16a34a"/>
+  <!-- Duration selector -->
+  <text x="528" y="284" font-size="10" font-weight="600" fill="#6e6e73" letter-spacing="1">DURATION</text>
+  <rect x="528" y="292" width="452" height="32" rx="8" fill="#1a1a24" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="548" y="313" font-size="13" fill="#f5f5f7">2 min  ▾</text>
 
-  <text x="580" y="332" font-size="10" fill="#6b7280">Ventana UTC</text>
-  <text x="580" y="348" font-size="12" fill="#e5e7eb">05:00 – 11:00</text>
+  <!-- Buttons — active state shows Stop as red -->
+  <rect x="528" y="336" width="218" height="36" rx="8" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="637" y="360" font-size="13" fill="#98989d" text-anchor="middle" opacity="0.5">Start</text>
+  <rect x="762" y="336" width="218" height="36" rx="8" fill="rgba(255,95,87,0.08)" stroke="rgba(255,95,87,0.3)" stroke-width="1"/>
+  <text x="871" y="360" font-size="13" font-weight="600" fill="#ff5f57" text-anchor="middle">Stop</text>
 
-  <text x="428" y="380" font-size="10" fill="#6b7280">Cooldown</text>
-  <text x="428" y="396" font-size="12" fill="#e5e7eb">180 min</text>
+  <!-- Additional state info -->
+  <rect x="528" y="390" width="452" height="76" rx="12" fill="rgba(255,255,255,0.01)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="548" y="412" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="1">SAFETY TIMEOUT</text>
+  <text x="548" y="430" font-size="13" fill="#f5f5f7">120 s  (safety watchdog)</text>
+  <text x="548" y="458" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="1">ACTIVATION REASON</text>
+  <text x="548" y="456" font-size="13" fill="#f5f5f7" dy="16">soil moisture below 35% threshold</text>
 
-  <text x="580" y="380" font-size="10" fill="#6b7280">Duración máx.</text>
-  <text x="580" y="396" font-size="12" fill="#e5e7eb">60 s</text>
-
-  <text x="428" y="450" font-size="11" fill="#60a5fa">✏️ Editar regla ▸</text>
+  <!-- State history mini timeline -->
+  <text x="528" y="496" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="1">RECENT ACTIVATIONS</text>
+  <line x1="528" y1="502" x2="968" y2="502" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="528" y="516" font-size="11" fill="#98989d" class="mono">10:34:55</text>
+  <rect x="590" y="508" width="60" height="10" rx="3" fill="rgba(52,208,88,0.3)"/>
+  <text x="540" y="528" font-size="11" fill="#6e6e73" class="mono">10:14:02</text>
+  <rect x="602" y="520" width="45" height="10" rx="3" fill="rgba(52,208,88,0.2)"/>
 </svg>

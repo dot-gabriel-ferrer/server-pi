@@ -4,17 +4,41 @@ Plataforma IoT **local-first** para domótica y monitorización de cultivo en Ra
 
 ## Capturas de pantalla
 
-### Panel principal — vista general
+### Portada — Home
+
+![Home](docs/screenshots/home.svg)
+
+*Página de inicio con título animado, reloj local en tiempo real, barra de estadísticas del sistema (CPU, RAM, disco y uptime), tarjetas de zonas (Greenhouse, Garden, Indoor) con recuento de sensores activos y acceso directo al dashboard, y panel de gestión de contenedores Docker.*
+
+### Dashboard principal — vista completa
 
 ![Dashboard general](docs/screenshots/dashboard.svg)
 
-*Vista completa: sensores en tiempo real con barras de progreso y estado, control del actuador de riego con selector de duración, regla de autoriego configurable inline, gráfico histórico de las últimas 2 horas y log de eventos.*
+*Vista completa: selector de zonas (Greenhouse / Garden / Indoor), telemetría de sensores en tiempo real con barras de progreso por métrica y estado de señal, control manual del actuador de riego con selector de duración, regla de autoriego activa, gráfico histórico con series seleccionables, snapshot de cámara con enlace al stream RTSP y log de eventos.*
 
-### Sensores y control de actuador
+### Sensores y actuador — detalle
 
 ![Sensores y actuador](docs/screenshots/sensors-actuator.svg)
 
-*Detalle de las tarjetas de sensores (temperatura, humedad ambiental, humedad de suelo y batería) con indicador de estado de señal en tiempo real, y panel de control del actuador con selector de duración variable.*
+*Detalle de las tarjetas de sensores: temperatura, humedad ambiental, humedad de suelo y batería con barras de progreso por color, indicador de estado de señal (verde/rojo según antigüedad de la lectura) y tipo de dispositivo (BLE / Zigbee). Actuador en estado ON mostrando cuenta regresiva del timeout de seguridad, historial de activaciones y botones Start/Stop.*
+
+### Regla de autoriego y gráfico histórico
+
+![Regla de autoriego y gráfico](docs/screenshots/rule-chart.svg)
+
+*Panel de automatización: umbral de humedad de suelo, ventana horaria UTC, cooldown, duración máxima y timeout de telemetría con edición inline. Gráfico de telemetría histórica con series independientes (temperatura, humedad ambiental, humedad de suelo), rango seleccionable (1h/2h/6h/24h), línea de umbral de autoriego y tooltip de punto.*
+
+### Eventos y cámara
+
+![Eventos y cámara](docs/screenshots/events-camera.svg)
+
+*Panel de cámara con snapshot de la zona, timestamp de captura, URL del stream RTSP y retención configurable. Log de eventos en tiempo real con tipos diferenciados (IR irrigación, AC actuador, AL alerta, ER error, SY sistema) y detalles de actor y dispositivo.*
+
+### Monitor de recursos del sistema
+
+![Recursos del sistema](docs/screenshots/resources.svg)
+
+*Página de recursos del host Raspberry Pi: indicadores circulares de CPU, memoria, disco y red con valores numéricos, gráfico de historia de CPU/memoria, tabla de procesos con mayor consumo y desglose de particiones de disco con barras de uso.*
 
 ## Arquitectura (diagrama textual)
 

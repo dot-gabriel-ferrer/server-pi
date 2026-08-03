@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <defs>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", system-ui, sans-serif; }
+      .mono { font-family: "SF Mono", "Fira Code", ui-monospace, monospace; }
+    </style>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#070709"/>
+      <stop offset="100%" stop-color="#070709"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="50%" cy="0%" r="50%">
+      <stop offset="0%" stop-color="#00c2ff" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#00c2ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="brandGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00c2ff"/>
+      <stop offset="100%" stop-color="#0099cc"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="760" fill="url(#bgGrad)"/>
+  <rect width="1200" height="760" fill="url(#glow1)"/>
+
+  <!-- Nav bar -->
+  <rect width="1200" height="52" fill="rgba(7,7,9,0.92)"/>
+  <rect y="51" width="1200" height="1" fill="rgba(255,255,255,0.06)"/>
+
+  <!-- Brand -->
+  <rect x="24" y="14" width="24" height="24" rx="7" fill="url(#brandGrad)"/>
+  <text x="36" y="30" font-size="11" font-weight="700" fill="#031117" text-anchor="middle">SP</text>
+  <text x="56" y="31" font-size="15" font-weight="500" fill="#f5f5f7">Server Pi</text>
+
+  <!-- Nav links -->
+  <text x="140" y="31" font-size="14" fill="#f5f5f7" font-weight="500">Home</text>
+  <rect x="136" y="51" width="38" height="1" fill="#00c2ff"/>
+  <text x="210" y="31" font-size="14" fill="#98989d">Dashboard</text>
+  <text x="305" y="31" font-size="14" fill="#98989d">Resources</text>
+
+  <!-- Health badge -->
+  <rect x="1030" y="13" width="94" height="26" rx="13" fill="rgba(19,19,26,0.72)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="1047" cy="26" r="3" fill="#34d058"/>
+  <text x="1056" y="30" font-size="12" font-weight="500" fill="#f5f5f7">Healthy</text>
+
+  <!-- Clock -->
+  <text x="1136" y="30" font-size="11" fill="#98989d" class="mono">10:36:42 UTC</text>
+
+  <!-- Hero card -->
+  <rect x="16" y="68" width="1168" height="120" rx="16" fill="#13131a" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="36" y="97" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2">PREMIUM DASHBOARD</text>
+  <text x="36" y="157" font-size="54" font-weight="700" fill="#f5f5f7" letter-spacing="-3">Server Pi</text>
+  <text x="36" y="177" font-size="16" fill="#98989d">Local-first IoT Platform</text>
+
+  <!-- Live clock in hero -->
+  <text x="1090" y="108" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2" text-anchor="end">CURRENT TIME</text>
+  <text x="1150" y="148" font-size="36" font-weight="700" fill="#f5f5f7" letter-spacing="-2" text-anchor="end" class="mono">10:36:42</text>
+  <text x="1150" y="170" font-size="13" fill="#98989d" text-anchor="end">Sunday, August 3, 2026</text>
+
+  <!-- System stats bar -->
+  <rect x="16" y="204" width="1168" height="48" rx="16" fill="#13131a" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="36" y="233" font-size="13" fill="#98989d">CPU  <tspan font-weight="600" fill="#f5f5f7">23%</tspan></text>
+  <text x="160" y="233" font-size="13" fill="#98989d">MEM  <tspan font-weight="600" fill="#f5f5f7">45%</tspan></text>
+  <text x="280" y="233" font-size="13" fill="#98989d">DISK  <tspan font-weight="600" fill="#f5f5f7">62%</tspan></text>
+  <text x="400" y="233" font-size="13" fill="#98989d">UP  <tspan font-weight="600" fill="#f5f5f7">3d 14h 22m</tspan></text>
+
+  <!-- Zone surfaces heading -->
+  <text x="16" y="288" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2">IOT PROJECTS</text>
+  <text x="16" y="314" font-size="26" font-weight="600" fill="#f5f5f7" letter-spacing="-1">Zone surfaces</text>
+  <text x="940" y="308" font-size="13" fill="#98989d">Three local environments with live telemetry.</text>
+
+  <!-- Zone card: Greenhouse -->
+  <rect x="16" y="324" width="376" height="280" rx="16" fill="#13131a" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="36" y="352" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2">ZONE</text>
+  <text x="36" y="385" font-size="26" font-weight="700" fill="#f5f5f7" letter-spacing="-1">Greenhouse</text>
+  <text x="36" y="414" font-size="13" fill="#98989d">Climate, irrigation, and sensor health for the</text>
+  <text x="36" y="431" font-size="13" fill="#98989d">primary greenhouse environment.</text>
+  <!-- Live sensors compact -->
+  <rect x="36" y="450" width="340" height="64" rx="14" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="52" y="471" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2">LIVE SENSORS</text>
+  <text x="52" y="499" font-size="26" font-weight="700" fill="#f5f5f7" letter-spacing="-1">2</text>
+  <text x="90" y="499" font-size="13" fill="#98989d">2 sensors reporting in this zone.</text>
+  <!-- View button -->
+  <rect x="36" y="527" width="340" height="34" rx="8" fill="#00c2ff"/>
+  <text x="206" y="549" font-size="13" font-weight="600" fill="#000" text-anchor="middle">View dashboard</text>
+
+  <!-- Zone card: Garden -->
+  <rect x="412" y="324" width="376" height="280" rx="16" fill="#13131a" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="432" y="352" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2">ZONE</text>
+  <text x="432" y="385" font-size="26" font-weight="700" fill="#f5f5f7" letter-spacing="-1">Garden</text>
+  <text x="432" y="414" font-size="13" fill="#98989d">Outdoor telemetry and irrigation control for</text>
+  <text x="432" y="431" font-size="13" fill="#98989d">beds, lines, and weather-aware automation.</text>
+  <rect x="432" y="450" width="340" height="64" rx="14" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="448" y="471" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2">LIVE SENSORS</text>
+  <text x="448" y="499" font-size="26" font-weight="700" fill="#6e6e73" letter-spacing="-1">0</text>
+  <text x="486" y="499" font-size="13" fill="#98989d">Waiting for telemetry from this zone.</text>
+  <rect x="432" y="527" width="340" height="34" rx="8" fill="#00c2ff"/>
+  <text x="602" y="549" font-size="13" font-weight="600" fill="#000" text-anchor="middle">View dashboard</text>
+
+  <!-- Zone card: Indoor -->
+  <rect x="808" y="324" width="376" height="280" rx="16" fill="#13131a" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="828" y="352" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2">ZONE</text>
+  <text x="828" y="385" font-size="26" font-weight="700" fill="#f5f5f7" letter-spacing="-1">Indoor</text>
+  <text x="828" y="414" font-size="13" fill="#98989d">Controlled interior monitoring for utility</text>
+  <text x="828" y="431" font-size="13" fill="#98989d">sensors, air quality, and equipment.</text>
+  <rect x="828" y="450" width="340" height="64" rx="14" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="844" y="471" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2">LIVE SENSORS</text>
+  <text x="844" y="499" font-size="26" font-weight="700" fill="#f5f5f7" letter-spacing="-1">1</text>
+  <text x="882" y="499" font-size="13" fill="#98989d">1 sensor reporting in this zone.</text>
+  <rect x="828" y="527" width="340" height="34" rx="8" fill="#00c2ff"/>
+  <text x="998" y="549" font-size="13" font-weight="600" fill="#000" text-anchor="middle">View dashboard</text>
+
+  <!-- Services section heading -->
+  <text x="16" y="640" font-size="11" font-weight="600" fill="#6e6e73" letter-spacing="2">SERVICES</text>
+  <text x="16" y="664" font-size="22" font-weight="600" fill="#f5f5f7" letter-spacing="-0.5">Container controls</text>
+  <text x="700" y="660" font-size="13" fill="#98989d">Docker-backed runtime inventory with live control actions.</text>
+
+  <!-- Services card -->
+  <rect x="16" y="672" width="1168" height="76" rx="16" fill="#13131a" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <!-- Service row 1 -->
+  <text x="36" y="698" font-size="12" fill="#f5f5f7" class="mono">server-pi-api</text>
+  <text x="36" y="714" font-size="11" fill="#6e6e73">server-pi-api:latest · abc1234de</text>
+  <circle cx="280" cy="698" r="3" fill="#34d058"/>
+  <text x="290" y="702" font-size="12" fill="#98989d">Running</text>
+  <rect x="360" y="685" width="52" height="24" rx="7" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="386" y="702" font-size="11" fill="#98989d" text-anchor="middle">Start</text>
+  <rect x="424" y="685" width="52" height="24" rx="7" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="450" y="702" font-size="11" fill="#98989d" text-anchor="middle">Stop</text>
+  <rect x="488" y="685" width="62" height="24" rx="7" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="519" y="702" font-size="11" fill="#98989d" text-anchor="middle">Restart</text>
+
+  <text x="620" y="698" font-size="12" fill="#f5f5f7" class="mono">mosquitto</text>
+  <text x="620" y="714" font-size="11" fill="#6e6e73">eclipse-mosquitto:2 · ff4422ab</text>
+  <circle cx="830" cy="698" r="3" fill="#34d058"/>
+  <text x="840" y="702" font-size="12" fill="#98989d">Running</text>
+  <rect x="910" y="685" width="52" height="24" rx="7" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="936" y="702" font-size="11" fill="#98989d" text-anchor="middle">Start</text>
+  <rect x="974" y="685" width="52" height="24" rx="7" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="1000" y="702" font-size="11" fill="#98989d" text-anchor="middle">Stop</text>
+  <rect x="1038" y="685" width="62" height="24" rx="7" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="1069" y="702" font-size="11" fill="#98989d" text-anchor="middle">Restart</text>
+</svg>
