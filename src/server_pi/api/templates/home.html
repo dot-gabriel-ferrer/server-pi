@@ -16,7 +16,6 @@
       justify-content: space-between;
       gap: 1.5rem;
       flex-wrap: wrap;
-      padding: 1.5rem;
     }
 
     .home-title {
@@ -80,7 +79,6 @@
       flex-direction: column;
       justify-content: space-between;
       gap: 1.5rem;
-      padding: 24px;
       min-height: 300px;
     }
 
@@ -148,11 +146,27 @@
       }
     }
   </style>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const timeEl = document.getElementById('home-live-time');
+    const dateEl = document.getElementById('home-live-date');
+    if (!timeEl || !dateEl) return;
+
+    const updateHomeClock = () => {
+      const now = new Date();
+      timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      dateEl.textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    };
+
+    updateHomeClock();
+    window.setInterval(updateHomeClock, 1000);
+  });
+</script>
 {% endblock %}
 
 {% block content %}
 <div class="home-grid" x-data="{ now: new Date() }" x-init="setInterval(() => now = new Date(), 1000)">
-  <section class="sp-card home-hero">
+  <section class="sp-card home-hero p-6">
     <div>
       <p class="sp-section-title">Premium dashboard</p>
       <h1 class="home-title">Server Pi</h1>
@@ -160,8 +174,8 @@
     </div>
     <div class="home-time-wrap">
       <p class="sp-section-title">Current time</p>
-      <div class="home-time" x-text="now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })"></div>
-      <p class="home-date" x-text="now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })"></p>
+      <div id="home-live-time" class="home-time" x-text="now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })">--:--:--</div>
+      <p id="home-live-date" class="home-date" x-text="now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })">Local time unavailable</p>
     </div>
   </section>
 
@@ -170,7 +184,8 @@
     hx-trigger="load"
     hx-target="this"
     hx-swap="outerHTML"
-    class="sp-card home-stats-bar flex items-center gap-6 p-4 text-sm text-[var(--sp-t2)]">
+    aria-live="polite"
+    class="sp-card home-stats-bar flex items-center gap-6 p-5 text-sm text-[var(--sp-t2)]">
     Loading system stats…
   </div>
 
@@ -189,7 +204,7 @@
         {"name": "Garden", "zone": "garden", "description": "Outdoor telemetry and irrigation control for beds, lines, and weather-aware automation."},
         {"name": "Indoor", "zone": "indoor", "description": "Controlled interior monitoring for utility sensors, air quality, and connected equipment."}
       ] %}
-      <article class="sp-card home-project-card">
+      <article class="sp-card home-project-card p-6">
         <div>
           <p class="sp-section-title">Zone</p>
           <h3 class="home-zone">{{ project.name }}</h3>
@@ -202,12 +217,14 @@
             hx-trigger="load"
             hx-target="this"
             hx-swap="outerHTML"
+            aria-live="polite"
+            aria-label="Sensor status for {{ project.name }}"
             class="home-status-shell">
             <p class="text-sm text-[var(--sp-t2)]">Loading live sensor count…</p>
           </div>
 
-          <a href="/dashboard?zone={{ project.zone }}" class="sp-btn-accent w-full justify-center py-2">
-            View Dashboard →
+          <a href="/dashboard?zone={{ project.zone }}" class="sp-btn-accent w-full justify-center py-2" aria-label="View {{ project.name }} dashboard">
+            View dashboard
           </a>
         </div>
       </article>

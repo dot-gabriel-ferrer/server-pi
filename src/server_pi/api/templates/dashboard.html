@@ -71,22 +71,28 @@
 
 {% block content %}
 <div x-data="dashboardPage()" x-init="init()" class="space-y-6">
-  <section class="sp-card px-5 py-4 sm:px-6">
+  <section class="sp-card p-5 sm:p-6">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
         <p class="sp-section-title mb-2">Zone selector</p>
         <h1 class="text-2xl font-semibold tracking-[-0.02em] text-[var(--sp-t1)]">IoT operations dashboard</h1>
       </div>
-      <div class="flex flex-wrap items-center gap-6 border-b border-[var(--sp-border)]">
-        <button type="button" class="sp-dashboard-tab" @click="setZone('greenhouse')"
+      <div class="flex flex-wrap items-center gap-6 border-b border-[var(--sp-border)]" role="tablist" aria-label="Zone selector">
+        <button type="button" class="sp-btn sp-dashboard-tab" @click="setZone('greenhouse')"
+          role="tab"
+          :aria-selected="(zone === 'greenhouse').toString()"
           :style="zone === 'greenhouse' ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">
           Greenhouse
         </button>
-        <button type="button" class="sp-dashboard-tab" @click="setZone('garden')"
+        <button type="button" class="sp-btn sp-dashboard-tab" @click="setZone('garden')"
+          role="tab"
+          :aria-selected="(zone === 'garden').toString()"
           :style="zone === 'garden' ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">
           Garden
         </button>
-        <button type="button" class="sp-dashboard-tab" @click="setZone('indoor')"
+        <button type="button" class="sp-btn sp-dashboard-tab" @click="setZone('indoor')"
+          role="tab"
+          :aria-selected="(zone === 'indoor').toString()"
           :style="zone === 'indoor' ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">
           Indoor
         </button>
@@ -98,6 +104,7 @@
     <div
       id="sensors-slot"
       class="sp-card p-5 lg:col-span-4"
+      aria-live="polite"
       hx-get="/ui/partials/sensors?zone={{ initial_zone }}"
       hx-trigger="load, every 10s"
       hx-target="this"
@@ -108,6 +115,7 @@
     <div
       id="actuator-card"
       class="sp-card p-5 lg:col-span-4"
+      aria-live="polite"
       hx-get="/ui/partials/actuator?actuator_id={{ actuator_id }}&zone={{ initial_zone }}"
       hx-trigger="load, every 10s"
       hx-target="this"
@@ -133,34 +141,34 @@
         </div>
         <div class="flex flex-col gap-3">
           <div class="flex flex-wrap items-center gap-4 border-b border-[var(--sp-border)]">
-            <button type="button" class="sp-chart-toggle" :class="series.temperature ? 'is-active' : 'is-inactive'" @click="toggleSeries('temperature')"
+            <button type="button" class="sp-btn sp-chart-toggle" :class="series.temperature ? 'is-active' : 'is-inactive'" @click="toggleSeries('temperature')"
               :style="series.temperature ? 'color: var(--sp-t1); border-bottom-color: var(--sp-warn);' : ''">
               Temperature
             </button>
-            <button type="button" class="sp-chart-toggle" :class="series.humidity ? 'is-active' : 'is-inactive'" @click="toggleSeries('humidity')"
+            <button type="button" class="sp-btn sp-chart-toggle" :class="series.humidity ? 'is-active' : 'is-inactive'" @click="toggleSeries('humidity')"
               :style="series.humidity ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">
               Humidity
             </button>
-            <button type="button" class="sp-chart-toggle" :class="series.soil ? 'is-active' : 'is-inactive'" @click="toggleSeries('soil')"
+            <button type="button" class="sp-btn sp-chart-toggle" :class="series.soil ? 'is-active' : 'is-inactive'" @click="toggleSeries('soil')"
               :style="series.soil ? 'color: var(--sp-t1); border-bottom-color: var(--sp-ok);' : ''">
               Soil Moisture
             </button>
           </div>
           <div class="flex flex-wrap items-center gap-4 border-b border-[var(--sp-border)]">
-            <button type="button" class="sp-range-btn" @click="setRange(1)"
+            <button type="button" class="sp-btn sp-range-btn" @click="setRange(1)"
               :style="hoursBack === 1 ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">1h</button>
-            <button type="button" class="sp-range-btn" @click="setRange(2)"
+            <button type="button" class="sp-btn sp-range-btn" @click="setRange(2)"
               :style="hoursBack === 2 ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">2h</button>
-            <button type="button" class="sp-range-btn" @click="setRange(6)"
+            <button type="button" class="sp-btn sp-range-btn" @click="setRange(6)"
               :style="hoursBack === 6 ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">6h</button>
-            <button type="button" class="sp-range-btn" @click="setRange(24)"
+            <button type="button" class="sp-btn sp-range-btn" @click="setRange(24)"
               :style="hoursBack === 24 ? 'color: var(--sp-t1); border-bottom-color: var(--sp-accent);' : ''">24h</button>
           </div>
         </div>
       </div>
       <div class="sp-chart-shell">
         <div id="telemetry-chart" class="h-[280px] w-full"></div>
-        <div id="telemetry-chart-empty" class="sp-chart-empty hidden">No telemetry available for the selected zone.</div>
+        <div id="telemetry-chart-empty" class="sp-chart-empty hidden">No telemetry data for this zone and time range</div>
       </div>
     </section>
 
@@ -177,8 +185,9 @@
     <div
       id="events-card"
       class="sp-card p-5 lg:col-span-12"
+      aria-live="polite"
       hx-get="/ui/partials/events?limit=20"
-      hx-trigger="load, every 15s"
+      hx-trigger="load, every 10s"
       hx-target="this"
       hx-swap="outerHTML">
       <p class="text-sm text-[var(--sp-t2)]">Loading events…</p>
@@ -326,6 +335,11 @@
           ]
         });
       },
+      resetChartData() {
+        this.chartData = { temperature: [], humidity: [], soil: [] };
+        this.applyChartData();
+        this.showEmptyChart(true);
+      },
       showEmptyChart(show) {
         const empty = document.getElementById('telemetry-chart-empty');
         if (!empty) return;
@@ -341,19 +355,24 @@
         const from = new Date(Date.now() - hoursBack * 3600000);
 
         try {
-          const latest = await fetch(`/api/v1/sensors/latest?zone=${encodeURIComponent(zone)}`, { cache: 'no-store' })
-            .then((r) => r.ok ? r.json() : []);
+          const latestResponse = await fetch(`/api/v1/sensors/latest?zone=${encodeURIComponent(zone)}`, { cache: 'no-store' });
+          const latestPayload = latestResponse.ok ? await latestResponse.json() : [];
           if (token !== this.loadToken) return;
-          const deviceId = latest?.[0]?.device_id;
+          const latest = Array.isArray(latestPayload) ? latestPayload : [];
+          const deviceId = latest[0]?.device_id;
           if (!deviceId) {
-            this.chartData = { temperature: [], humidity: [], soil: [] };
-            this.applyChartData();
-            this.showEmptyChart(true);
+            this.resetChartData();
             return;
           }
-          const hist = await fetch(`/api/v1/sensors/history?device_id=${encodeURIComponent(deviceId)}&from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`, { cache: 'no-store' })
-            .then((r) => r.ok ? r.json() : []);
+
+          const histResponse = await fetch(`/api/v1/sensors/history?device_id=${encodeURIComponent(deviceId)}&from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`, { cache: 'no-store' });
+          const histPayload = histResponse.ok ? await histResponse.json() : [];
           if (token !== this.loadToken) return;
+          const hist = Array.isArray(histPayload) ? histPayload : [];
+          if (!hist.length) {
+            this.resetChartData();
+            return;
+          }
 
           this.chartData = {
             temperature: hist.filter((r) => r.temperature_c != null).map((r) => [r.ts, r.temperature_c]),
@@ -362,13 +381,15 @@
           };
 
           const hasData = this.chartData.temperature.length || this.chartData.humidity.length || this.chartData.soil.length;
+          if (!hasData) {
+            this.resetChartData();
+            return;
+          }
           this.applyChartData();
-          this.showEmptyChart(!hasData);
+          this.showEmptyChart(false);
         } catch {
           if (token !== this.loadToken) return;
-          this.chartData = { temperature: [], humidity: [], soil: [] };
-          this.applyChartData();
-          this.showEmptyChart(true);
+          this.resetChartData();
         }
       }
     };

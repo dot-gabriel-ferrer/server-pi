@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
+from fastapi.exceptions import HTTPException as FastAPIHTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -187,20 +188,25 @@ def _serialize_container(container: object) -> dict[str, str]:
     }
 
 
-def _get_services() -> list[dict[str, str]]:
+def _get_services_with_availability() -> tuple[list[dict[str, str]], bool]:
     try:
         import docker
 
         client = docker.from_env()
         try:
             containers = client.containers.list(all=True)
-            return [_serialize_container(container) for container in containers]
+            return [_serialize_container(container) for container in containers], True
         finally:
             close = getattr(client, "close", None)
             if callable(close):
                 close()
     except Exception:  # noqa: BLE001
-        return []
+        return [], False
+
+
+def _get_services() -> list[dict[str, str]]:
+    services, _ = _get_services_with_availability()
+    return services
 
 
 def _control_service(container_name: str, action: str) -> dict[str, str]:
@@ -314,6 +320,20 @@ def get_runtime() -> AppState:
 def health() -> dict[str, str]:
     """Health endpoint."""
     return {"status": "ok", "ts": datetime.now(UTC).isoformat()}
+
+
+@app.exception_handler(404)
+async def not_found_handler(
+    request: Request, exc: FastAPIHTTPException
+) -> HTMLResponse:
+    """Render custom 404 page."""
+    del exc
+    return templates.TemplateResponse(
+        request=request,
+        name="404.html",
+        context={"request": request},
+        status_code=404,
+    )
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -542,10 +562,15 @@ def ui_partial_system_stats(request: Request) -> HTMLResponse:
 @app.get("/ui/partials/services", response_class=HTMLResponse)
 def ui_partial_services(request: Request) -> HTMLResponse:
     """Render Docker services fragment for HTMX polling."""
+    services, docker_available = _get_services_with_availability()
     return templates.TemplateResponse(
         request=request,
         name="partials/services.html",
-        context={"request": request, "services": _get_services()},
+        context={
+            "request": request,
+            "services": services,
+            "docker_available": docker_available,
+        },
     )
 
 
@@ -571,6 +596,7 @@ def ui_partial_camera(
 def ui_partial_rule(
     request: Request,
     actuator_id: str = Query("irrigation-main", min_length=1),
+    zone: str = Query(settings.default_zone, min_length=1),
     runtime: AppState = Depends(get_runtime),
 ) -> HTMLResponse:
     """Render irrigation rule card fragment for HTMX polling."""
@@ -578,7 +604,12 @@ def ui_partial_rule(
     return templates.TemplateResponse(
         request=request,
         name="partials/rule.html",
-        context={"request": request, "rule": rule, "actuator_id": actuator_id},
+        context={
+            "request": request,
+            "rule": rule,
+            "actuator_id": actuator_id,
+            "zone": zone,
+        },
     )
 
 

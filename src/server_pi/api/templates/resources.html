@@ -80,7 +80,6 @@
     }
 
     .resource-card {
-      padding: 1.25rem;
       overflow: hidden;
     }
 
@@ -115,7 +114,6 @@
 
     .resource-chart-card,
     .resource-process-card {
-      padding: 1.25rem;
     }
 
     .resource-chart-head,
@@ -442,7 +440,7 @@
   <section class="resource-page" aria-labelledby="resources-title">
     <header class="resource-header">
       <div>
-        <p class="sp-section-title" style="margin-bottom: 0.5rem;">System telemetry</p>
+        <p class="sp-section-title mb-2">System telemetry</p>
         <h1 id="resources-title" class="resource-title">Resources</h1>
         <p class="resource-subtitle">Live visibility into CPU, memory, disk, network throughput, uptime, and active processes across your Server Pi runtime.</p>
       </div>
@@ -456,7 +454,7 @@
     </header>
 
     <section class="resource-metrics" aria-label="Top resource metrics">
-      <article class="sp-card resource-card">
+      <article class="sp-card resource-card p-5">
         <div class="resource-card-head">
           <div>
             <div class="sp-metric-val resource-loading" id="cpu-val">--%</div>
@@ -469,7 +467,7 @@
         <p class="resource-submetric" id="cpu-meta">Waiting for telemetry</p>
       </article>
 
-      <article class="sp-card resource-card">
+      <article class="sp-card resource-card p-5">
         <div class="resource-card-head">
           <div>
             <div class="sp-metric-val resource-loading" id="mem-val">-- / -- GB</div>
@@ -482,7 +480,7 @@
         <p class="resource-submetric" id="mem-meta">Waiting for telemetry</p>
       </article>
 
-      <article class="sp-card resource-card">
+      <article class="sp-card resource-card p-5">
         <div class="resource-card-head">
           <div>
             <div class="sp-metric-val resource-loading" id="disk-val">--%</div>
@@ -495,7 +493,7 @@
         <p class="resource-submetric" id="disk-meta">Waiting for telemetry</p>
       </article>
 
-      <article class="sp-card resource-card">
+      <article class="sp-card resource-card p-5">
         <div class="resource-card-head">
           <div>
             <div class="sp-metric-val resource-network-value resource-loading" id="net-val">↑ --  ↓ --</div>
@@ -507,7 +505,7 @@
     </section>
 
     <section class="resource-layout" aria-label="Live telemetry details">
-      <article class="sp-card resource-chart-card">
+      <article class="sp-card resource-chart-card p-5">
         <div class="resource-chart-head">
           <div class="resource-chart-title-wrap">
             <div class="resource-inline-title">
@@ -515,8 +513,8 @@
               <span>CPU &amp; Memory — Live</span>
             </div>
             <div class="resource-chart-labels">
-              <span><span class="resource-swatch" style="background: var(--sp-warn);"></span> CPU</span>
-              <span><span class="resource-swatch" style="background: var(--sp-accent);"></span> Memory</span>
+              <span><span class="resource-swatch bg-[var(--sp-warn)]"></span> CPU</span>
+              <span><span class="resource-swatch bg-[var(--sp-accent)]"></span> Memory</span>
             </div>
           </div>
           <div class="resource-badge">Rolling 60 samples</div>
@@ -527,10 +525,10 @@
       </article>
 
       <div class="resource-side-grid">
-        <article class="sp-card resource-card">
+        <article class="sp-card resource-card p-5">
           <div class="resource-panel-head">
             <div>
-              <div class="sp-section-title" style="margin-bottom: 0.5rem;">Disk details</div>
+              <div class="sp-section-title mb-2">Disk details</div>
               <div class="resource-free-value resource-loading" id="disk-free-val">-- GB free</div>
               <div class="resource-submetric" id="disk-detail-meta">Usage details pending</div>
             </div>
@@ -546,7 +544,7 @@
           </div>
         </article>
 
-        <article class="sp-card resource-card">
+        <article class="sp-card resource-card p-5">
           <div class="resource-panel-head">
             <div>
               <div class="sp-metric-val resource-uptime-value resource-loading" id="uptime-val">--</div>
@@ -575,7 +573,7 @@
       </div>
     </section>
 
-    <section class="sp-card resource-process-card" aria-labelledby="processes-title">
+    <section class="sp-card resource-process-card p-5" aria-labelledby="processes-title">
       <div class="resource-table-head">
         <div class="resource-inline-title" id="processes-title">Processes</div>
         <div class="resource-badge"><span id="proc-count">0</span> visible</div>
@@ -686,6 +684,36 @@
 
     function clearLoadingState() {
       document.querySelectorAll('.resource-loading').forEach((el) => el.classList.remove('resource-loading'));
+    }
+
+    function applyOfflineState() {
+      const placeholders = {
+        'cpu-val': '--%',
+        'cpu-meta': 'Waiting for telemetry',
+        'mem-val': '-- / -- GB',
+        'mem-meta': 'Waiting for telemetry',
+        'disk-val': '--%',
+        'disk-meta': 'Waiting for telemetry',
+        'disk-free-val': '-- GB free',
+        'disk-gauge-val': '--',
+        'disk-detail-meta': 'Usage details pending',
+        'net-val': '↑ --  ↓ --',
+        'net-meta': 'Totals unavailable',
+        'uptime-val': '--',
+      };
+      Object.entries(placeholders).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      });
+      const diskGauge = document.getElementById('disk-gauge');
+      if (diskGauge) {
+        diskGauge.style.setProperty('--gauge-value', 0);
+        diskGauge.style.setProperty('--bar-color', 'var(--sp-ok)');
+      }
+      applyMetricBar('cpu-bar', 0, 'var(--sp-ok)');
+      applyMetricBar('mem-bar', 0, 'var(--sp-accent)');
+      applyMetricBar('disk-bar', 0, 'var(--sp-ok)');
+      renderPartitions({});
     }
 
     function flashUpdate(id) {
@@ -918,6 +946,7 @@
         setLiveState('live', formatLastSync(now));
       } catch (error) {
         setLiveState('offline', ' · retrying');
+        applyOfflineState();
         renderProcesses([]);
         renderLoadAverage([], 1);
       }

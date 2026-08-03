@@ -3,7 +3,9 @@
   hx-trigger="every 5s"
   hx-target="this"
   hx-swap="outerHTML"
-  class="sp-card flex flex-wrap items-center gap-6 px-5 py-4 text-sm text-[var(--sp-t2)]">
+  role="status"
+  aria-live="polite"
+  class="sp-card flex flex-wrap items-center gap-6 p-5 text-sm text-[var(--sp-t2)]">
   <span>CPU {{ stats.cpu_percent | round | int }}%</span>
   <span>MEM {{ stats.memory_percent | round | int }}%</span>
   <span>DISK {{ stats.disk_percent | round | int }}%</span>

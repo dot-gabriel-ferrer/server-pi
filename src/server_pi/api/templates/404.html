@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Server Pi — Page Not Found{% endblock %}
+
+{% block content %}
+<section class="sp-card p-6">
+  <p class="sp-section-title">Page not found</p>
+  <h1 class="text-3xl font-semibold tracking-[-0.03em] text-[var(--sp-t1)]">This page is unavailable.</h1>
+  <p class="mt-4 max-w-2xl text-sm text-[var(--sp-t2)]">The address may be outdated, or the page may have moved.</p>
+  <div class="mt-6 flex flex-wrap gap-3">
+    <a href="/" class="sp-btn-accent">Go home</a>
+    <a href="/dashboard" class="sp-btn">Open dashboard</a>
+  </div>
+</section>
+{% endblock %}
