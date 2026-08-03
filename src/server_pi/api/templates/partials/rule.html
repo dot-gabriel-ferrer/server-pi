@@ -1,0 +1,169 @@
+<div
+  id="rule-card"
+  hx-get="/ui/partials/rule?actuator_id={{ actuator_id }}"
+  hx-trigger="every 30s"
+  hx-target="this"
+  hx-swap="outerHTML"
+  class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="font-semibold">⚙️ Regla de riego — {{ actuator_id }}</h2>
+    {% if rule %}
+    <span class="text-xs px-2 py-0.5 rounded font-semibold
+      {% if rule.enabled %}bg-green-900 text-green-400{% else %}bg-gray-800 text-gray-400{% endif %}">
+      {% if rule.enabled %}ACTIVA{% else %}PAUSADA{% endif %}
+    </span>
+    {% endif %}
+  </div>
+
+  {% if saved %}
+  <div class="mb-3 flex items-center gap-2 text-xs bg-green-950 border border-green-800 text-green-400 rounded px-3 py-2">
+    ✓ Regla guardada correctamente
+  </div>
+  {% endif %}
+
+  {% if rule %}
+  <dl class="text-sm grid grid-cols-2 gap-x-4 gap-y-1.5 text-gray-400 mb-4">
+    <div>
+      <dt class="text-xs text-gray-500">Zona</dt>
+      <dd class="text-gray-200 font-mono">{{ rule.zone }}</dd>
+    </div>
+    <div>
+      <dt class="text-xs text-gray-500">Umbral humedad suelo</dt>
+      <dd class="text-gray-200">
+        <span class="text-green-400 font-semibold">{{ rule.soil_moisture_threshold_pct }}%</span>
+        <div class="mt-0.5 h-1 w-full bg-gray-800 rounded">
+          <div class="h-1 rounded bg-green-600" style="width: {{ rule.soil_moisture_threshold_pct }}%"></div>
+        </div>
+      </dd>
+    </div>
+    <div>
+      <dt class="text-xs text-gray-500">Ventana horaria (UTC)</dt>
+      <dd class="text-gray-200">{{ "%02d:00"|format(rule.allowed_start_hour_utc) }} – {{ "%02d:00"|format(rule.allowed_end_hour_utc) }}</dd>
+    </div>
+    <div>
+      <dt class="text-xs text-gray-500">Cooldown</dt>
+      <dd class="text-gray-200">{{ rule.cooldown_minutes }} min</dd>
+    </div>
+    <div>
+      <dt class="text-xs text-gray-500">Duración máx.</dt>
+      <dd class="text-gray-200">{{ rule.max_duration_sec }} s</dd>
+    </div>
+    <div>
+      <dt class="text-xs text-gray-500">Timeout telemetría</dt>
+      <dd class="text-gray-200">{{ rule.telemetry_timeout_minutes }} min</dd>
+    </div>
+  </dl>
+
+  <details class="group">
+    <summary class="cursor-pointer text-xs text-gray-500 hover:text-gray-300 select-none transition-colors">
+      ✏️ Editar regla
+    </summary>
+    <form
+      hx-post="/ui/rules/{{ actuator_id }}?zone={{ rule.zone }}"
+      hx-target="#rule-card"
+      hx-swap="outerHTML"
+      class="mt-3 space-y-3 text-sm">
+      <div class="flex items-center gap-3">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="enabled" value="true"
+            {% if rule.enabled %}checked{% endif %}
+            class="w-4 h-4 accent-green-500" />
+          <span class="text-gray-300">Regla activa</span>
+        </label>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block">
+          <span class="text-xs text-gray-400">Umbral suelo (%)</span>
+          <input type="number" name="soil_moisture_threshold_pct" min="0" max="100" step="1"
+            value="{{ rule.soil_moisture_threshold_pct }}"
+            class="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500" />
+        </label>
+        <label class="block">
+          <span class="text-xs text-gray-400">Cooldown (min)</span>
+          <input type="number" name="cooldown_minutes" min="1" max="1440"
+            value="{{ rule.cooldown_minutes }}"
+            class="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500" />
+        </label>
+        <label class="block">
+          <span class="text-xs text-gray-400">Hora inicio UTC</span>
+          <input type="number" name="allowed_start_hour_utc" min="0" max="23"
+            value="{{ rule.allowed_start_hour_utc }}"
+            class="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500" />
+        </label>
+        <label class="block">
+          <span class="text-xs text-gray-400">Hora fin UTC</span>
+          <input type="number" name="allowed_end_hour_utc" min="0" max="23"
+            value="{{ rule.allowed_end_hour_utc }}"
+            class="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500" />
+        </label>
+        <label class="block">
+          <span class="text-xs text-gray-400">Duración máx. (s)</span>
+          <input type="number" name="max_duration_sec" min="1" max="3600"
+            value="{{ rule.max_duration_sec }}"
+            class="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500" />
+        </label>
+        <label class="block">
+          <span class="text-xs text-gray-400">Timeout telemetría (min)</span>
+          <input type="number" name="telemetry_timeout_minutes" min="1" max="1440"
+            value="{{ rule.telemetry_timeout_minutes }}"
+            class="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500" />
+        </label>
+      </div>
+      <button type="submit"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1.5 rounded-lg transition-colors text-sm">
+        💾 Guardar regla
+      </button>
+    </form>
+  </details>
+
+  {% else %}
+  <p class="text-gray-500 text-sm mb-4">Sin regla configurada para <em>{{ actuator_id }}</em>.</p>
+  <details class="group">
+    <summary class="cursor-pointer text-xs text-blue-400 hover:text-blue-300 select-none">
+      ➕ Crear regla de riego
+    </summary>
+    <form
+      hx-post="/ui/rules/{{ actuator_id }}?zone=greenhouse"
+      hx-target="#rule-card"
+      hx-swap="outerHTML"
+      class="mt-3 space-y-3 text-sm">
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block">
+          <span class="text-xs text-gray-400">Umbral suelo (%)</span>
+          <input type="number" name="soil_moisture_threshold_pct" min="0" max="100" value="35"
+            class="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500" />
+        </label>
+        <label class="block">
+          <span class="text-xs text-gray-400">Cooldown (min)</span>
+          <input type="number" name="cooldown_minutes" min="1" max="1440" value="180"
+            class="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500" />
+        </label>
+        <label class="block">
+          <span class="text-xs text-gray-400">Hora inicio UTC</span>
+          <input type="number" name="allowed_start_hour_utc" min="0" max="23" value="5"
+            class="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500" />
+        </label>
+        <label class="block">
+          <span class="text-xs text-gray-400">Hora fin UTC</span>
+          <input type="number" name="allowed_end_hour_utc" min="0" max="23" value="11"
+            class="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500" />
+        </label>
+        <label class="block">
+          <span class="text-xs text-gray-400">Duración máx. (s)</span>
+          <input type="number" name="max_duration_sec" min="1" max="3600" value="60"
+            class="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500" />
+        </label>
+        <label class="block">
+          <span class="text-xs text-gray-400">Timeout telemetría (min)</span>
+          <input type="number" name="telemetry_timeout_minutes" min="1" max="1440" value="15"
+            class="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500" />
+        </label>
+      </div>
+      <button type="submit"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1.5 rounded-lg transition-colors text-sm">
+        💾 Guardar regla
+      </button>
+    </form>
+  </details>
+  {% endif %}
+</div>

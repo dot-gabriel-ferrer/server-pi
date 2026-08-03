@@ -6,40 +6,93 @@
   class="bg-gray-900 rounded-xl border border-gray-800 p-4">
   <h2 class="font-semibold mb-3">🌡️ Sensores — {{ zone }}</h2>
   {% if readings %}
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="text-gray-400 border-b border-gray-700 text-xs">
-          <th class="text-left pb-2 pr-2">Dispositivo</th>
-          <th class="text-right pb-2 pr-2">Temp °C</th>
-          <th class="text-right pb-2 pr-2">Hum %</th>
-          <th class="text-right pb-2 pr-2">Suelo %</th>
-          <th class="text-right pb-2">Bat %</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in readings %}
-        <tr class="border-b border-gray-800 hover:bg-gray-800 transition-colors">
-          <td class="py-2 pr-2 font-mono text-xs text-gray-300 truncate max-w-[12rem]">{{ r.device_id }}</td>
-          <td class="py-2 pr-2 text-right {% if r.temperature_c is not none %}text-orange-400{% else %}text-gray-600{% endif %}">
-            {% if r.temperature_c is not none %}{{ "%.1f"|format(r.temperature_c) }}{% else %}—{% endif %}
-          </td>
-          <td class="py-2 pr-2 text-right {% if r.humidity_pct is not none %}text-blue-400{% else %}text-gray-600{% endif %}">
-            {% if r.humidity_pct is not none %}{{ "%.1f"|format(r.humidity_pct) }}{% else %}—{% endif %}
-          </td>
-          <td class="py-2 pr-2 text-right {% if r.soil_moisture_pct is not none %}text-green-400{% else %}text-gray-600{% endif %}">
-            {% if r.soil_moisture_pct is not none %}{{ "%.1f"|format(r.soil_moisture_pct) }}{% else %}—{% endif %}
-          </td>
-          <td class="py-2 text-right text-gray-400">
-            {% if r.battery_pct is not none %}{{ r.battery_pct }}{% else %}—{% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="space-y-3">
+    {% for r in readings %}
+    {% set age_sec = now.timestamp() - r.ts.timestamp() %}
+    <div class="bg-gray-800 rounded-lg p-3">
+      <div class="flex items-center justify-between mb-2">
+        <span class="font-mono text-xs text-gray-300 truncate max-w-[14rem]">{{ r.device_id }}</span>
+        <div class="flex items-center gap-2">
+          <span class="text-xs px-1.5 py-0.5 rounded font-mono bg-gray-700 text-gray-400">{{ r.type.value }}</span>
+          <span class="w-2 h-2 rounded-full
+            {% if age_sec < 120 %}bg-green-500
+            {% elif age_sec < 600 %}bg-yellow-500
+            {% else %}bg-red-500{% endif %}"
+            title="{{ r.ts.strftime('%H:%M:%S') }} UTC"></span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+        {% if r.temperature_c is not none %}
+        {% set temp_pct = [(r.temperature_c + 10) / 60 * 100, 0] | max %}
+        {% set temp_pct = [temp_pct, 100] | min %}
+        <div>
+          <div class="flex justify-between text-xs mb-0.5">
+            <span class="text-gray-500">Temperatura</span>
+            <span class="text-orange-400 font-semibold">{{ "%.1f"|format(r.temperature_c) }} °C</span>
+          </div>
+          <div class="h-1.5 w-full bg-gray-700 rounded">
+            <div class="h-1.5 rounded bg-orange-500 transition-all" style="width: {{ temp_pct | int }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+        {% if r.humidity_pct is not none %}
+        <div>
+          <div class="flex justify-between text-xs mb-0.5">
+            <span class="text-gray-500">Humedad amb.</span>
+            <span class="text-blue-400 font-semibold">{{ "%.1f"|format(r.humidity_pct) }}%</span>
+          </div>
+          <div class="h-1.5 w-full bg-gray-700 rounded">
+            <div class="h-1.5 rounded bg-blue-500 transition-all" style="width: {{ r.humidity_pct | int }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+        {% if r.soil_moisture_pct is not none %}
+        <div>
+          <div class="flex justify-between text-xs mb-0.5">
+            <span class="text-gray-500">Humedad suelo</span>
+            <span class="font-semibold
+              {% if r.soil_moisture_pct < 30 %}text-red-400
+              {% elif r.soil_moisture_pct < 60 %}text-yellow-400
+              {% else %}text-green-400{% endif %}">{{ "%.1f"|format(r.soil_moisture_pct) }}%</span>
+          </div>
+          <div class="h-1.5 w-full bg-gray-700 rounded">
+            <div class="h-1.5 rounded transition-all
+              {% if r.soil_moisture_pct < 30 %}bg-red-500
+              {% elif r.soil_moisture_pct < 60 %}bg-yellow-500
+              {% else %}bg-green-500{% endif %}"
+              style="width: {{ r.soil_moisture_pct | int }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+        {% if r.battery_pct is not none %}
+        <div>
+          <div class="flex justify-between text-xs mb-0.5">
+            <span class="text-gray-500">Batería</span>
+            <span class="font-semibold
+              {% if r.battery_pct < 20 %}text-red-400
+              {% elif r.battery_pct < 50 %}text-yellow-400
+              {% else %}text-gray-300{% endif %}">{{ r.battery_pct }}%</span>
+          </div>
+          <div class="h-1.5 w-full bg-gray-700 rounded">
+            <div class="h-1.5 rounded transition-all
+              {% if r.battery_pct < 20 %}bg-red-500
+              {% elif r.battery_pct < 50 %}bg-yellow-500
+              {% else %}bg-gray-400{% endif %}"
+              style="width: {{ r.battery_pct }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      <p class="text-xs text-gray-600 mt-2">{{ r.ts.strftime('%H:%M:%S') }} UTC</p>
+    </div>
+    {% endfor %}
   </div>
   {% else %}
-  <p class="text-gray-500 text-sm">Sin lecturas para la zona <em>{{ zone }}</em>.</p>
+  <div class="flex flex-col items-center justify-center py-8 text-center">
+    <span class="text-3xl mb-2">📡</span>
+    <p class="text-gray-500 text-sm">Sin lecturas para la zona <em>{{ zone }}</em>.</p>
+    <p class="text-gray-600 text-xs mt-1">Esperando datos de sensores BLE/Zigbee…</p>
+  </div>
   {% endif %}
-  <p class="text-xs text-gray-600 mt-3">Actualizado: {{ now.strftime('%H:%M:%S') }} UTC</p>
+  <p class="text-xs text-gray-600 mt-3 text-right">Actualizado: {{ now.strftime('%H:%M:%S') }} UTC</p>
 </div>

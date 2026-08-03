@@ -204,6 +204,15 @@ def actuator_state(
     return state
 
 
+@app.get("/api/v1/rules/irrigation")
+def rules_irrigation_get(
+    actuator_id: str = Query("irrigation-main", min_length=1),
+    runtime: AppState = Depends(get_runtime),
+) -> IrrigationRule | None:
+    """Fetch current irrigation rule for an actuator."""
+    return runtime.state_repo.get_rule(actuator_id)
+
+
 @app.post("/api/v1/rules/irrigation")
 def rules_irrigation(
     actuator_id: str = Query("irrigation-main", min_length=1),
@@ -297,6 +306,20 @@ def ui_partial_camera(
     )
 
 
+@app.get("/ui/partials/rule", response_class=HTMLResponse)
+def ui_partial_rule(
+    request: Request,
+    actuator_id: str = Query("irrigation-main", min_length=1),
+    runtime: AppState = Depends(get_runtime),
+) -> HTMLResponse:
+    """Render irrigation rule card fragment for HTMX polling."""
+    rule = runtime.state_repo.get_rule(actuator_id)
+    return templates.TemplateResponse(
+        "partials/rule.html",
+        {"request": request, "rule": rule, "actuator_id": actuator_id},
+    )
+
+
 # ---------------------------------------------------------------------------
 # UI actuator control routes (HTMX form POST → return updated card fragment)
 # ---------------------------------------------------------------------------
@@ -357,4 +380,36 @@ def ui_actuator_off(
     return templates.TemplateResponse(
         "partials/actuator.html",
         {"request": request, "state": state, "actuator_id": actuator_id, "zone": zone},
+    )
+
+
+@app.post("/ui/rules/{actuator_id}", response_class=HTMLResponse)
+def ui_rule_update(
+    request: Request,
+    actuator_id: str,
+    zone: str = Query(..., min_length=1),
+    enabled: bool = Query(True),
+    soil_moisture_threshold_pct: float = Query(..., ge=0, le=100),
+    allowed_start_hour_utc: int = Query(..., ge=0, le=23),
+    allowed_end_hour_utc: int = Query(..., ge=0, le=23),
+    cooldown_minutes: int = Query(..., ge=1, le=1440),
+    max_duration_sec: int = Query(..., ge=1, le=3600),
+    telemetry_timeout_minutes: int = Query(..., ge=1, le=1440),
+    runtime: AppState = Depends(get_runtime),
+) -> HTMLResponse:
+    """Update irrigation rule via UI form and return updated card fragment."""
+    rule = IrrigationRule(
+        zone=zone,
+        enabled=enabled,
+        soil_moisture_threshold_pct=soil_moisture_threshold_pct,
+        allowed_start_hour_utc=allowed_start_hour_utc,
+        allowed_end_hour_utc=allowed_end_hour_utc,
+        cooldown_minutes=cooldown_minutes,
+        max_duration_sec=max_duration_sec,
+        telemetry_timeout_minutes=telemetry_timeout_minutes,
+    )
+    runtime.upsert_rule(actuator_id, rule)
+    return templates.TemplateResponse(
+        "partials/rule.html",
+        {"request": request, "rule": rule, "actuator_id": actuator_id, "saved": True},
     )

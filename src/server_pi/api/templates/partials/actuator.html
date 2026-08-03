@@ -11,6 +11,11 @@
     <span class="text-3xl font-extrabold tracking-tight {% if state.state.value == 'on' %}text-green-400{% else %}text-red-400{% endif %}">
       {{ state.state.value | upper }}
     </span>
+    {% if state.state.value == 'on' %}
+    <span class="text-xs bg-green-900 text-green-300 border border-green-700 px-2 py-0.5 rounded-full animate-pulse font-semibold">
+      ● Activo — {{ state.safety_timeout_sec }} s máx.
+    </span>
+    {% endif %}
     <span class="text-xs text-gray-400 px-2 py-0.5 rounded bg-gray-800 font-mono">{{ state.mode.value }}</span>
   </div>
 
@@ -23,21 +28,24 @@
       <dt>Actor</dt>
       <dd class="text-gray-300">{{ state.last_actor }}</dd>
     </div>
-    <div class="flex justify-between">
-      <dt>Timeout</dt>
-      <dd class="text-gray-300">{{ state.safety_timeout_sec }} s</dd>
-    </div>
   </dl>
 
-  <div class="flex gap-2">
+  <div class="flex gap-2 items-end">
+    <div class="flex-1">
+      <label class="block text-xs text-gray-500 mb-1">Duración</label>
+      <select id="dur-{{ actuator_id }}"
+        class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+        <option value="30">30 s</option>
+        <option value="60">1 min</option>
+        <option value="120">2 min</option>
+        <option value="300">5 min</option>
+      </select>
+    </div>
     <button
-      hx-post="/ui/actuators/{{ actuator_id }}/on?zone={{ zone }}&duration_sec=30"
-      hx-target="#actuator-card"
-      hx-swap="outerHTML"
-      hx-confirm="¿Activar riego manual por 30 segundos?"
+      onclick="(function(){var d=document.getElementById('dur-{{ actuator_id }}').value;htmx.ajax('POST','/ui/actuators/{{ actuator_id }}/on?zone={{ zone }}&duration_sec='+d,{target:'#actuator-card',swap:'outerHTML',confirm:'¿Activar riego manual por '+d+' segundos?'});})();"
       class="flex-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       {% if state.state.value == 'on' %}disabled{% endif %}>
-      ▶ Riego 30 s
+      ▶ Riego
     </button>
     <button
       hx-post="/ui/actuators/{{ actuator_id }}/off?zone={{ zone }}"

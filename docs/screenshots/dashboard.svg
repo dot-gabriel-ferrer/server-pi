@@ -1,0 +1,204 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700">
+  <defs>
+    <style>
+      text { font-family: ui-sans-serif, system-ui, sans-serif; }
+      .mono { font-family: ui-monospace, monospace; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="700" fill="#030712"/>
+
+  <!-- Top bar -->
+  <rect width="1200" height="52" fill="#030712" stroke="#1f2937" stroke-width="1"/>
+  <text x="20" y="33" font-size="16" font-weight="700" fill="#f3f4f6">🌱 Server Pi</text>
+  <text x="120" y="33" font-size="13" fill="#6b7280">Plataforma IoT local-first</text>
+
+  <!-- Zone selector -->
+  <rect x="900" y="14" width="120" height="24" rx="4" fill="#1f2937" stroke="#374151" stroke-width="1"/>
+  <text x="915" y="30" font-size="11" fill="#d1d5db">greenhouse ▾</text>
+
+  <!-- Health badge -->
+  <rect x="1030" y="14" width="60" height="24" rx="12" fill="#052e16" stroke="#166534" stroke-width="1"/>
+  <text x="1044" y="30" font-size="11" font-weight="600" fill="#4ade80">● OK</text>
+
+  <!-- UTC clock -->
+  <text x="1100" y="31" font-size="11" fill="#6b7280" class="mono">10:36 UTC</text>
+
+  <!-- === CARD 1: Sensores === -->
+  <rect x="16" y="68" width="368" height="295" rx="12" fill="#111827" stroke="#1f2937" stroke-width="1"/>
+  <text x="32" y="94" font-size="14" font-weight="600" fill="#f3f4f6">🌡️ Sensores — greenhouse</text>
+
+  <!-- Sensor device 1 -->
+  <rect x="28" y="106" width="344" height="120" rx="8" fill="#1f2937"/>
+  <text x="44" y="127" font-size="11" fill="#d1d5db" class="mono">ble-aa-bb-cc-dd</text>
+  <rect x="270" y="115" width="36" height="16" rx="3" fill="#374151"/>
+  <text x="276" y="127" font-size="10" fill="#9ca3af" class="mono">ble</text>
+  <circle cx="318" cy="123" r="4" fill="#22c55e"/>
+
+  <!-- Temp bar -->
+  <text x="44" y="153" font-size="10" fill="#6b7280">Temperatura</text>
+  <text x="290" y="153" font-size="11" font-weight="600" fill="#f97316">24.3 °C</text>
+  <rect x="44" y="157" width="315" height="5" rx="2" fill="#374151"/>
+  <rect x="44" y="157" width="175" height="5" rx="2" fill="#f97316"/>
+
+  <!-- Humidity bar -->
+  <text x="44" y="183" font-size="10" fill="#6b7280">Humedad amb.</text>
+  <text x="295" y="183" font-size="11" font-weight="600" fill="#3b82f6">62.1%</text>
+  <rect x="44" y="187" width="315" height="5" rx="2" fill="#374151"/>
+  <rect x="44" y="187" width="196" height="5" rx="2" fill="#3b82f6"/>
+
+  <!-- Soil moisture bar -->
+  <text x="185" y="153" font-size="10" fill="#6b7280">Humedad suelo</text>
+  <text x="295" y="153" font-size="11" font-weight="600" fill="#facc15" dx="65" dy="30">28.5%</text>
+  <rect x="185" y="157" width="175" height="5" rx="2" fill="#374151"/>
+  <rect x="185" y="157" width="50" height="5" rx="2" fill="#eab308"/>
+
+  <!-- Battery bar -->
+  <text x="185" y="183" font-size="10" fill="#6b7280">Batería</text>
+  <text x="295" y="183" font-size="11" font-weight="600" fill="#d1d5db" dx="65">87%</text>
+  <rect x="185" y="187" width="175" height="5" rx="2" fill="#374151"/>
+  <rect x="185" y="187" width="152" height="5" rx="2" fill="#9ca3af"/>
+
+  <text x="44" y="220" font-size="10" fill="#4b5563" class="mono">10:35:42 UTC</text>
+
+  <!-- Sensor device 2 -->
+  <rect x="28" y="234" width="344" height="100" rx="8" fill="#1f2937"/>
+  <text x="44" y="255" font-size="11" fill="#d1d5db" class="mono">zigbee-0x1234</text>
+  <rect x="263" y="243" width="46" height="16" rx="3" fill="#374151"/>
+  <text x="269" y="255" font-size="10" fill="#9ca3af" class="mono">zigbee</text>
+  <circle cx="318" cy="251" r="4" fill="#22c55e"/>
+  <text x="44" y="278" font-size="10" fill="#6b7280">Temperatura</text>
+  <text x="290" y="278" font-size="11" font-weight="600" fill="#f97316">23.8 °C</text>
+  <rect x="44" y="282" width="315" height="5" rx="2" fill="#374151"/>
+  <rect x="44" y="282" width="172" height="5" rx="2" fill="#f97316"/>
+  <text x="44" y="308" font-size="10" fill="#6b7280">Humedad amb.</text>
+  <text x="295" y="308" font-size="11" font-weight="600" fill="#3b82f6">58.7%</text>
+  <rect x="44" y="312" width="315" height="5" rx="2" fill="#374151"/>
+  <rect x="44" y="312" width="186" height="5" rx="2" fill="#3b82f6"/>
+  <text x="44" y="348" font-size="10" fill="#4b5563" class="mono">10:35:50 UTC</text>
+
+  <text x="340" y="355" font-size="10" fill="#4b5563">Actualizado: 10:36:02 UTC</text>
+
+  <!-- === CARD 2: Actuador === -->
+  <rect x="400" y="68" width="368" height="295" rx="12" fill="#111827" stroke="#1f2937" stroke-width="1"/>
+  <text x="416" y="94" font-size="14" font-weight="600" fill="#f3f4f6">💧 Actuador — irrigation-main</text>
+
+  <!-- State OFF -->
+  <text x="416" y="140" font-size="36" font-weight="800" fill="#f87171">OFF</text>
+  <rect x="508" y="118" width="76" height="22" rx="11" fill="#374151"/>
+  <text x="524" y="132" font-size="11" fill="#9ca3af">manual</text>
+
+  <!-- DL -->
+  <text x="416" y="172" font-size="12" fill="#6b7280">Último cambio</text>
+  <text x="620" y="172" font-size="11" fill="#d1d5db" class="mono">2026-08-03 10:35:12 UTC</text>
+  <text x="416" y="194" font-size="12" fill="#6b7280">Actor</text>
+  <text x="620" y="194" font-size="12" fill="#d1d5db">portal-ui</text>
+
+  <!-- Duration selector -->
+  <text x="416" y="224" font-size="11" fill="#6b7280">Duración</text>
+  <rect x="416" y="230" width="100" height="28" rx="4" fill="#1f2937" stroke="#374151" stroke-width="1"/>
+  <text x="432" y="248" font-size="12" fill="#d1d5db">30 s ▾</text>
+
+  <!-- Buttons -->
+  <rect x="530" y="228" width="110" height="30" rx="6" fill="#2563eb"/>
+  <text x="556" y="247" font-size="12" font-weight="600" fill="white">▶ Riego</text>
+  <rect x="652" y="228" width="100" height="30" rx="6" fill="#b91c1c" opacity="0.5"/>
+  <text x="676" y="247" font-size="12" font-weight="600" fill="#fca5a5">■ Parar</text>
+
+  <!-- State ON (overlay example) -->
+  <rect x="400" y="280" width="368" height="75" rx="0" fill="#111827" opacity="0"/>
+
+  <!-- === CARD 3: Regla === -->
+  <rect x="784" y="68" width="400" height="295" rx="12" fill="#111827" stroke="#1f2937" stroke-width="1"/>
+  <text x="800" y="94" font-size="14" font-weight="600" fill="#f3f4f6">⚙️ Regla de riego — irrigation-main</text>
+  <rect x="1110" y="75" width="56" height="20" rx="10" fill="#052e16" stroke="#166534" stroke-width="1"/>
+  <text x="1118" y="88" font-size="10" font-weight="700" fill="#4ade80">ACTIVA</text>
+
+  <!-- Rule fields grid -->
+  <text x="800" y="128" font-size="10" fill="#6b7280">Zona</text>
+  <text x="800" y="144" font-size="12" fill="#e5e7eb" class="mono">greenhouse</text>
+
+  <text x="990" y="128" font-size="10" fill="#6b7280">Umbral humedad suelo</text>
+  <text x="990" y="144" font-size="12" font-weight="600" fill="#4ade80">35%</text>
+  <rect x="990" y="148" width="180" height="4" rx="2" fill="#374151"/>
+  <rect x="990" y="148" width="63" height="4" rx="2" fill="#16a34a"/>
+
+  <text x="800" y="175" font-size="10" fill="#6b7280">Ventana horaria (UTC)</text>
+  <text x="800" y="191" font-size="12" fill="#e5e7eb">05:00 – 11:00</text>
+
+  <text x="990" y="175" font-size="10" fill="#6b7280">Cooldown</text>
+  <text x="990" y="191" font-size="12" fill="#e5e7eb">180 min</text>
+
+  <text x="800" y="222" font-size="10" fill="#6b7280">Duración máx.</text>
+  <text x="800" y="238" font-size="12" fill="#e5e7eb">60 s</text>
+
+  <text x="990" y="222" font-size="10" fill="#6b7280">Timeout telemetría</text>
+  <text x="990" y="238" font-size="12" fill="#e5e7eb">15 min</text>
+
+  <!-- Edit toggle -->
+  <text x="800" y="275" font-size="11" fill="#60a5fa">✏️ Editar regla ▸</text>
+
+  <!-- === CARD 4: Chart === -->
+  <rect x="16" y="375" width="784" height="180" rx="12" fill="#111827" stroke="#1f2937" stroke-width="1"/>
+  <text x="32" y="400" font-size="14" font-weight="600" fill="#f3f4f6">📈 Histórico últimas 2 h</text>
+  <text x="730" y="400" font-size="11" fill="#6b7280">↻ Actualizar</text>
+
+  <!-- Fake chart lines -->
+  <polyline points="50,510 110,490 170,505 230,480 290,470 350,485 410,455 470,460 530,440 590,450 610,440 650,435 720,430 780,425" fill="none" stroke="#f97316" stroke-width="2" opacity="0.9"/>
+  <polyline points="50,465 110,480 170,470 230,490 290,485 350,475 410,488 470,478 530,492 590,480 610,475 650,485 720,478 780,482" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.9"/>
+  <polyline points="50,520 110,525 170,530 230,525 290,540 350,535 410,545 470,548 530,545 590,550 610,555 650,548 720,552 780,558" fill="none" stroke="#22c55e" stroke-width="2" opacity="0.9"/>
+
+  <!-- X axis labels -->
+  <text x="50" y="558" font-size="9" fill="#6b7280">08:36</text>
+  <text x="170" y="558" font-size="9" fill="#6b7280">09:00</text>
+  <text x="290" y="558" font-size="9" fill="#6b7280">09:30</text>
+  <text x="410" y="558" font-size="9" fill="#6b7280">10:00</text>
+  <text x="530" y="558" font-size="9" fill="#6b7280">10:15</text>
+  <text x="650" y="558" font-size="9" fill="#6b7280">10:30</text>
+  <text x="750" y="558" font-size="9" fill="#6b7280">10:36</text>
+
+  <!-- Legend -->
+  <rect x="32" y="410" width="12" height="4" rx="2" fill="#f97316"/>
+  <text x="50" y="416" font-size="10" fill="#e5e7eb">Temperatura (°C)</text>
+  <rect x="155" y="410" width="12" height="4" rx="2" fill="#3b82f6"/>
+  <text x="173" y="416" font-size="10" fill="#e5e7eb">Humedad amb. (%)</text>
+  <rect x="285" y="410" width="12" height="4" rx="2" fill="#22c55e"/>
+  <text x="303" y="416" font-size="10" fill="#e5e7eb">Humedad suelo (%)</text>
+
+  <!-- === CARD 5: Cámara === -->
+  <rect x="816" y="375" width="368" height="180" rx="12" fill="#111827" stroke="#1f2937" stroke-width="1"/>
+  <text x="832" y="400" font-size="14" font-weight="600" fill="#f3f4f6">📷 Cámara — greenhouse</text>
+  <text x="832" y="422" font-size="11" fill="#60a5fa">▶ Abrir stream RTSP</text>
+  <rect x="832" y="434" width="336" height="105" rx="6" fill="#1f2937" stroke="#374151" stroke-width="1"/>
+  <!-- Fake camera image placeholder -->
+  <rect x="832" y="434" width="336" height="105" rx="6" fill="#111827"/>
+  <text x="932" y="487" font-size="28">🌿</text>
+  <text x="895" y="510" font-size="11" fill="#6b7280">snapshot — greenhouse</text>
+  <text x="832" y="553" font-size="10" fill="#4b5563">Snapshot: 2026-08-03 10:35:00 UTC</text>
+
+  <!-- === CARD 6: Eventos === -->
+  <rect x="16" y="567" width="1168" height="118" rx="12" fill="#111827" stroke="#1f2937" stroke-width="1"/>
+  <text x="32" y="592" font-size="14" font-weight="600" fill="#f3f4f6">📋 Eventos recientes</text>
+
+  <!-- Event rows -->
+  <rect x="32" y="602" width="56" height="16" rx="3" fill="#052e16"/>
+  <text x="38" y="614" font-size="9" font-weight="700" fill="#4ade80">IRRIGATION</text>
+  <text x="98" y="614" font-size="11" fill="#e5e7eb">Riego automático activado — suelo 28.5% &lt; 35%</text>
+  <text x="1100" y="614" font-size="10" fill="#4b5563" class="mono">10:30:01</text>
+
+  <rect x="32" y="624" width="44" height="16" rx="3" fill="#172554"/>
+  <text x="38" y="636" font-size="9" font-weight="700" fill="#60a5fa">ACTUATOR</text>
+  <text x="86" y="636" font-size="11" fill="#e5e7eb">actuator on — irrigation-main</text>
+  <text x="1100" y="636" font-size="10" fill="#4b5563" class="mono">10:30:01</text>
+
+  <rect x="32" y="646" width="44" height="16" rx="3" fill="#172554"/>
+  <text x="38" y="658" font-size="9" font-weight="700" fill="#60a5fa">ACTUATOR</text>
+  <text x="86" y="658" font-size="11" fill="#e5e7eb">actuator off — irrigation-main</text>
+  <text x="1100" y="658" font-size="10" fill="#4b5563" class="mono">10:31:01</text>
+
+  <rect x="32" y="668" width="50" height="16" rx="3" fill="#1e1b4b"/>
+  <text x="38" y="680" font-size="9" font-weight="700" fill="#818cf8">CAMERA</text>
+  <text x="92" y="680" font-size="11" fill="#e5e7eb">snapshot captured — cam-greenhouse</text>
+  <text x="1100" y="680" font-size="10" fill="#4b5563" class="mono">10:35:00</text>
+</svg>

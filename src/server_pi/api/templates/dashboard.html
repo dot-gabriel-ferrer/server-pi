@@ -9,68 +9,110 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <style>
       [hx-get][hx-trigger]:not([data-loaded]) { transition: opacity 0.2s; }
+      details > summary { list-style: none; }
+      details > summary::-webkit-details-marker { display: none; }
     </style>
   </head>
-  <body class="bg-gray-950 text-gray-100 min-h-screen p-4 md:p-6">
+  <body class="bg-gray-950 text-gray-100 min-h-screen">
 
-    <header class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight">🌱 Server Pi &mdash; Cultivo Local-First</h1>
-        <p class="text-gray-400 text-sm mt-0.5">Panel de monitorización en tiempo real</p>
+    <!-- Top bar -->
+    <header class="sticky top-0 z-20 bg-gray-950/95 backdrop-blur border-b border-gray-800 px-4 md:px-6 py-3 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <h1 class="text-lg font-bold tracking-tight whitespace-nowrap">🌱 Server Pi</h1>
+        <span class="hidden sm:block text-gray-500 text-sm truncate">Plataforma IoT local-first</span>
       </div>
-      <span id="clock" class="text-xs text-gray-500 font-mono"></span>
+
+      <div class="flex items-center gap-3">
+        <!-- Zone selector -->
+        <div class="flex items-center gap-2">
+          <label for="zone-select" class="text-xs text-gray-500 whitespace-nowrap">Zona:</label>
+          <select id="zone-select"
+            onchange="setZone(this.value)"
+            class="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+            <option value="greenhouse">greenhouse</option>
+            <option value="garden">garden</option>
+            <option value="indoor">indoor</option>
+          </select>
+        </div>
+
+        <!-- Health badge -->
+        <span id="health-badge"
+          class="text-xs px-2 py-0.5 rounded-full font-semibold bg-gray-800 text-gray-500">
+          ···
+        </span>
+
+        <!-- UTC clock -->
+        <span id="clock" class="text-xs text-gray-500 font-mono hidden md:block"></span>
+      </div>
     </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <main class="p-4 md:p-6">
+      <div id="grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
-      <!-- Sensores en tiempo real (HTMX polling) -->
-      <div
-        hx-get="/ui/partials/sensors?zone=greenhouse"
-        hx-trigger="load, every 10s"
-        hx-target="this"
-        hx-swap="outerHTML"
-        class="bg-gray-900 rounded-xl border border-gray-800 p-4">
-        <p class="text-gray-500 text-sm animate-pulse">Cargando sensores…</p>
+        <!-- Sensores en tiempo real (HTMX polling) -->
+        <div id="sensors-slot"
+          hx-get="/ui/partials/sensors?zone=greenhouse"
+          hx-trigger="load, every 10s"
+          hx-target="this"
+          hx-swap="outerHTML"
+          class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <p class="text-gray-500 text-sm animate-pulse">Cargando sensores…</p>
+        </div>
+
+        <!-- Actuador de riego (HTMX polling) -->
+        <div
+          id="actuator-card"
+          hx-get="/ui/partials/actuator?actuator_id=irrigation-main&zone=greenhouse"
+          hx-trigger="load, every 10s"
+          hx-target="this"
+          hx-swap="outerHTML"
+          class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <p class="text-gray-500 text-sm animate-pulse">Cargando actuador…</p>
+        </div>
+
+        <!-- Regla de riego (HTMX polling) -->
+        <div
+          id="rule-card"
+          hx-get="/ui/partials/rule?actuator_id=irrigation-main"
+          hx-trigger="load, every 30s"
+          hx-target="this"
+          hx-swap="outerHTML"
+          class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <p class="text-gray-500 text-sm animate-pulse">Cargando regla…</p>
+        </div>
+
+        <!-- Gráfico histórico Chart.js (últimas 2 h) -->
+        <div class="lg:col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-semibold">📈 Histórico últimas 2 h</h2>
+            <button onclick="loadHistChart()" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">↻ Actualizar</button>
+          </div>
+          <canvas id="histChart" height="90"></canvas>
+          <p id="hist-empty" class="hidden text-gray-500 text-sm text-center py-6">Sin datos históricos disponibles.</p>
+        </div>
+
+        <!-- Cámara (HTMX polling) -->
+        <div
+          hx-get="/ui/partials/camera"
+          hx-trigger="load, every 30s"
+          hx-target="this"
+          hx-swap="outerHTML"
+          class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <p class="text-gray-500 text-sm animate-pulse">Cargando cámara…</p>
+        </div>
+
+        <!-- Eventos recientes (HTMX polling) -->
+        <div
+          hx-get="/ui/partials/events?limit=20"
+          hx-trigger="load, every 15s"
+          hx-target="this"
+          hx-swap="outerHTML"
+          class="lg:col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <p class="text-gray-500 text-sm animate-pulse">Cargando eventos…</p>
+        </div>
+
       </div>
-
-      <!-- Actuador de riego (HTMX polling) -->
-      <div
-        id="actuator-card"
-        hx-get="/ui/partials/actuator?actuator_id=irrigation-main&zone=greenhouse"
-        hx-trigger="load, every 10s"
-        hx-target="this"
-        hx-swap="outerHTML"
-        class="bg-gray-900 rounded-xl border border-gray-800 p-4">
-        <p class="text-gray-500 text-sm animate-pulse">Cargando actuador…</p>
-      </div>
-
-      <!-- Gráfico histórico Chart.js (últimas 2 h) -->
-      <div class="md:col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-4">
-        <h2 class="font-semibold mb-3">📈 Histórico últimas 2 h</h2>
-        <canvas id="histChart" height="80"></canvas>
-      </div>
-
-      <!-- Cámara (HTMX polling) -->
-      <div
-        hx-get="/ui/partials/camera"
-        hx-trigger="load, every 30s"
-        hx-target="this"
-        hx-swap="outerHTML"
-        class="bg-gray-900 rounded-xl border border-gray-800 p-4">
-        <p class="text-gray-500 text-sm animate-pulse">Cargando cámara…</p>
-      </div>
-
-      <!-- Eventos recientes (HTMX polling) -->
-      <div
-        hx-get="/ui/partials/events?limit=20"
-        hx-trigger="load, every 15s"
-        hx-target="this"
-        hx-swap="outerHTML"
-        class="bg-gray-900 rounded-xl border border-gray-800 p-4">
-        <p class="text-gray-500 text-sm animate-pulse">Cargando eventos…</p>
-      </div>
-
-    </div>
+    </main>
 
     <script>
       // Live clock
@@ -80,16 +122,58 @@
       updateClock();
       setInterval(updateClock, 1000);
 
+      // Health badge
+      async function checkHealth() {
+        const badge = document.getElementById('health-badge');
+        try {
+          const r = await fetch('/health');
+          if (r.ok) {
+            badge.textContent = '● OK';
+            badge.className = 'text-xs px-2 py-0.5 rounded-full font-semibold bg-green-950 text-green-400 border border-green-800';
+          } else {
+            throw new Error('bad status');
+          }
+        } catch {
+          badge.textContent = '● Error';
+          badge.className = 'text-xs px-2 py-0.5 rounded-full font-semibold bg-red-950 text-red-400 border border-red-800';
+        }
+      }
+      checkHealth();
+      setInterval(checkHealth, 30000);
+
+      // Zone selector: update all HTMX elements that depend on zone
+      function setZone(zone) {
+        const sensorsSlot = document.getElementById('sensors-slot');
+        if (sensorsSlot) {
+          sensorsSlot.setAttribute('hx-get', `/ui/partials/sensors?zone=${zone}`);
+          htmx.process(sensorsSlot);
+          htmx.trigger(sensorsSlot, 'load');
+        }
+        const actuatorCard = document.getElementById('actuator-card');
+        if (actuatorCard) {
+          actuatorCard.setAttribute('hx-get', `/ui/partials/actuator?actuator_id=irrigation-main&zone=${zone}`);
+          htmx.process(actuatorCard);
+          htmx.trigger(actuatorCard, 'load');
+        }
+        loadHistChart(zone);
+      }
+
       // Chart.js: historical temperature / humidity / soil moisture
       let histChart = null;
 
-      async function loadHistChart() {
-        const zone = 'greenhouse';
+      async function loadHistChart(zoneOverride) {
+        const zone = zoneOverride || document.getElementById('zone-select')?.value || 'greenhouse';
         const latest = await fetch(`/api/v1/sensors/latest?zone=${zone}`)
           .then(r => r.ok ? r.json() : [])
           .catch(() => []);
         const deviceId = latest?.[0]?.device_id;
-        if (!deviceId) return;
+        const emptyEl = document.getElementById('hist-empty');
+
+        if (!deviceId) {
+          if (emptyEl) emptyEl.classList.remove('hidden');
+          return;
+        }
+        if (emptyEl) emptyEl.classList.add('hidden');
 
         const to = new Date().toISOString();
         const from = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
@@ -97,15 +181,19 @@
           `/api/v1/sensors/history?device_id=${encodeURIComponent(deviceId)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
         ).then(r => r.ok ? r.json() : []).catch(() => []);
 
-        if (!hist.length) return;
+        if (!hist.length) {
+          if (emptyEl) emptyEl.classList.remove('hidden');
+          return;
+        }
 
         const labels = hist.map(r => new Date(r.ts).toLocaleTimeString());
         const mkDataset = (label, key, color) => ({
           label,
           data: hist.map(r => r[key] ?? null),
           borderColor: color,
-          backgroundColor: 'transparent',
+          backgroundColor: color + '18',
           tension: 0.3,
+          fill: false,
           spanGaps: true,
           pointRadius: 2,
         });
@@ -119,7 +207,7 @@
             labels,
             datasets: [
               mkDataset('Temperatura (°C)', 'temperature_c', '#f97316'),
-              mkDataset('Humedad ambiental (%)', 'humidity_pct', '#3b82f6'),
+              mkDataset('Humedad amb. (%)', 'humidity_pct', '#3b82f6'),
               mkDataset('Humedad suelo (%)', 'soil_moisture_pct', '#22c55e'),
             ],
           },
@@ -127,7 +215,7 @@
             responsive: true,
             interaction: { mode: 'index', intersect: false },
             scales: {
-              x: { ticks: { color: '#9ca3af', maxTicksLimit: 12 }, grid: { color: '#1f2937' } },
+              x: { ticks: { color: '#9ca3af', maxTicksLimit: 10 }, grid: { color: '#1f2937' } },
               y: { ticks: { color: '#9ca3af' }, grid: { color: '#1f2937' } },
             },
             plugins: {
