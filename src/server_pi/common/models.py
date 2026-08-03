@@ -89,7 +89,7 @@ class WeatherCondition(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     max_ambient_temp_c: float | None = Field(default=None, ge=-20, le=60)
-    min_ambient_humidity_pct: float | None = Field(default=None, ge=0, le=100)
+    max_ambient_humidity_pct: float | None = Field(default=None, ge=0, le=100)
 
 
 class IrrigationRule(BaseModel):
