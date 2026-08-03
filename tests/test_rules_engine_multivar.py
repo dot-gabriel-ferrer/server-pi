@@ -21,7 +21,7 @@ def rule() -> IrrigationRule:
         cooldown_minutes=180,
         max_duration_sec=60,
         telemetry_timeout_minutes=15,
-        weather=WeatherCondition(max_ambient_temp_c=35.0, min_ambient_humidity_pct=80.0),
+        weather=WeatherCondition(max_ambient_temp_c=35.0, max_ambient_humidity_pct=80.0),
         temp_sensor_device_id="sensor-ambient",
     )
 
