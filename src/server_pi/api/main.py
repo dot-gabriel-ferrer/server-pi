@@ -13,6 +13,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel, Field
+
+try:
+    import psutil
+
+    HAS_PSUTIL = True
+except Exception:  # noqa: BLE001
+    psutil = None
+    HAS_PSUTIL = False
 
 from server_pi.api.app_state import AppState, run_periodic_tasks
 from server_pi.api.camera import CameraService
@@ -42,6 +51,174 @@ logging.basicConfig(
 )
 logger = logging.getLogger("server_pi.api")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+
+
+class SystemProcess(BaseModel):
+    """Top process usage details."""
+
+    pid: int
+    name: str
+    cpu_percent: float
+    mem_mb: float
+    status: str
+
+
+class SystemStats(BaseModel):
+    """System resource snapshot."""
+
+    cpu_percent: float = 0.0
+    cpu_count: int = 0
+    memory_total_gb: float = 0.0
+    memory_used_gb: float = 0.0
+    memory_percent: float = 0.0
+    disk_total_gb: float = 0.0
+    disk_used_gb: float = 0.0
+    disk_percent: float = 0.0
+    net_bytes_sent_mb: float = 0.0
+    net_bytes_recv_mb: float = 0.0
+    uptime_seconds: int = 0
+    load_avg: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0])
+    processes: list[SystemProcess] = Field(default_factory=list)
+
+
+def _round_metric(value: object, digits: int = 1) -> float:
+    try:
+        return round(float(value), digits)
+    except Exception:  # noqa: BLE001
+        return 0.0
+
+
+def _format_uptime(uptime_seconds: int) -> str:
+    days, remainder = divmod(max(uptime_seconds, 0), 86400)
+    hours, remainder = divmod(remainder, 3600)
+    minutes, _ = divmod(remainder, 60)
+    if days:
+        return f"{days}d {hours}h"
+    if hours:
+        return f"{hours}h {minutes}m"
+    return f"{minutes}m"
+
+
+def _empty_system_stats() -> SystemStats:
+    return SystemStats()
+
+
+def _get_system_stats() -> SystemStats:
+    stats = _empty_system_stats()
+    if not HAS_PSUTIL or psutil is None:
+        return stats
+
+    try:
+        stats.cpu_percent = _round_metric(psutil.cpu_percent(interval=None))
+        stats.cpu_count = psutil.cpu_count() or 0
+    except Exception:  # noqa: BLE001
+        logger.exception("system_stats_cpu_failed")
+
+    try:
+        memory = psutil.virtual_memory()
+        stats.memory_total_gb = _round_metric(memory.total / 1024**3)
+        stats.memory_used_gb = _round_metric(memory.used / 1024**3)
+        stats.memory_percent = _round_metric(memory.percent)
+    except Exception:  # noqa: BLE001
+        logger.exception("system_stats_memory_failed")
+
+    try:
+        disk = psutil.disk_usage("/")
+        stats.disk_total_gb = _round_metric(disk.total / 1024**3)
+        stats.disk_used_gb = _round_metric(disk.used / 1024**3)
+        stats.disk_percent = _round_metric(disk.percent)
+    except Exception:  # noqa: BLE001
+        logger.exception("system_stats_disk_failed")
+
+    try:
+        network = psutil.net_io_counters()
+        stats.net_bytes_sent_mb = _round_metric(network.bytes_sent / 1024**2)
+        stats.net_bytes_recv_mb = _round_metric(network.bytes_recv / 1024**2)
+    except Exception:  # noqa: BLE001
+        logger.exception("system_stats_network_failed")
+
+    try:
+        stats.uptime_seconds = int(max(datetime.now(UTC).timestamp() - psutil.boot_time(), 0))
+    except Exception:  # noqa: BLE001
+        logger.exception("system_stats_uptime_failed")
+
+    try:
+        stats.load_avg = [_round_metric(value) for value in psutil.getloadavg()]
+    except Exception:  # noqa: BLE001
+        stats.load_avg = [0.0, 0.0, 0.0]
+
+    try:
+        processes: list[SystemProcess] = []
+        for proc in psutil.process_iter(["pid", "name", "cpu_percent", "memory_info", "status"]):
+            try:
+                info = proc.info
+                memory_info = info.get("memory_info")
+                mem_mb = 0.0
+                if memory_info is not None:
+                    mem_mb = _round_metric(getattr(memory_info, "rss", 0) / 1024**2)
+                processes.append(
+                    SystemProcess(
+                        pid=int(info.get("pid") or 0),
+                        name=str(info.get("name") or "unknown"),
+                        cpu_percent=_round_metric(info.get("cpu_percent") or 0.0),
+                        mem_mb=mem_mb,
+                        status=str(info.get("status") or "unknown"),
+                    )
+                )
+            except Exception:  # noqa: BLE001
+                continue
+        stats.processes = sorted(
+            processes, key=lambda process: process.cpu_percent, reverse=True
+        )[:15]
+    except Exception:  # noqa: BLE001
+        logger.exception("system_stats_processes_failed")
+
+    return stats
+
+
+def _serialize_container(container: object) -> dict[str, str]:
+    image = getattr(container, "image", None)
+    tags = getattr(image, "tags", []) if image is not None else []
+    return {
+        "name": str(getattr(container, "name", "unknown")),
+        "status": str(getattr(container, "status", "unknown")),
+        "image": tags[0] if tags else "unknown",
+        "id": str(getattr(container, "short_id", "unknown")),
+    }
+
+
+def _get_services() -> list[dict[str, str]]:
+    try:
+        import docker
+
+        client = docker.from_env()
+        try:
+            containers = client.containers.list(all=True)
+            return [_serialize_container(container) for container in containers]
+        finally:
+            close = getattr(client, "close", None)
+            if callable(close):
+                close()
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def _control_service(container_name: str, action: str) -> dict[str, str]:
+    try:
+        import docker
+
+        client = docker.from_env()
+        try:
+            container = client.containers.get(container_name)
+            getattr(container, action)()
+            container.reload()
+            return _serialize_container(container)
+        finally:
+            close = getattr(client, "close", None)
+            if callable(close):
+                close()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail="Docker service unavailable") from exc
 
 
 def _build_repo() -> TimeSeriesRepository:
@@ -142,7 +319,55 @@ def health() -> dict[str, str]:
 @app.get("/", response_class=HTMLResponse)
 def portal(request: Request) -> HTMLResponse:
     """Render minimal local portal UI."""
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse(
+        request=request, name="home.html", context={"request": request}
+    )
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request) -> HTMLResponse:
+    """Render dashboard UI."""
+    return templates.TemplateResponse(
+        request=request, name="dashboard.html", context={"request": request}
+    )
+
+
+@app.get("/resources", response_class=HTMLResponse)
+def resources(request: Request) -> HTMLResponse:
+    """Render resources page."""
+    return templates.TemplateResponse(
+        request=request, name="resources.html", context={"request": request}
+    )
+
+
+@app.get("/api/v1/system/stats", response_model=SystemStats)
+def system_stats() -> SystemStats:
+    """Return host system statistics."""
+    return _get_system_stats()
+
+
+@app.get("/api/v1/services")
+def services_status() -> list[dict[str, str]]:
+    """Return Docker service status list."""
+    return _get_services()
+
+
+@app.post("/api/v1/services/{container_name}/start")
+def service_start(container_name: str) -> dict[str, str]:
+    """Start a Docker service."""
+    return _control_service(container_name, "start")
+
+
+@app.post("/api/v1/services/{container_name}/stop")
+def service_stop(container_name: str) -> dict[str, str]:
+    """Stop a Docker service."""
+    return _control_service(container_name, "stop")
+
+
+@app.post("/api/v1/services/{container_name}/restart")
+def service_restart(container_name: str) -> dict[str, str]:
+    """Restart a Docker service."""
+    return _control_service(container_name, "restart")
 
 
 @app.get("/api/v1/sensors/latest")
@@ -248,13 +473,21 @@ def camera_info(runtime: AppState = Depends(get_runtime)) -> JSONResponse:
 def ui_partial_sensors(
     request: Request,
     zone: str = Query(..., min_length=1),
+    compact: bool = Query(False),
     runtime: AppState = Depends(get_runtime),
 ) -> HTMLResponse:
     """Render sensor readings card fragment for HTMX polling."""
     readings = runtime.timeseries.get_latest_by_zone(zone)
     return templates.TemplateResponse(
-        "partials/sensors.html",
-        {"request": request, "readings": readings, "zone": zone, "now": datetime.now(UTC)},
+        request=request,
+        name="partials/sensors.html",
+        context={
+            "request": request,
+            "readings": readings,
+            "zone": zone,
+            "now": datetime.now(UTC),
+            "compact": compact,
+        },
     )
 
 
@@ -270,8 +503,9 @@ def ui_partial_actuator(
         actuator_id, zone
     )
     return templates.TemplateResponse(
-        "partials/actuator.html",
-        {"request": request, "state": state, "actuator_id": actuator_id, "zone": zone},
+        request=request,
+        name="partials/actuator.html",
+        context={"request": request, "state": state, "actuator_id": actuator_id, "zone": zone},
     )
 
 
@@ -284,8 +518,34 @@ def ui_partial_events(
     """Render recent events list fragment for HTMX polling."""
     events = runtime.timeseries.get_events(limit=limit)
     return templates.TemplateResponse(
-        "partials/events.html",
-        {"request": request, "events": events, "limit": limit},
+        request=request,
+        name="partials/events.html",
+        context={"request": request, "events": events, "limit": limit},
+    )
+
+
+@app.get("/ui/partials/system-stats", response_class=HTMLResponse)
+def ui_partial_system_stats(request: Request) -> HTMLResponse:
+    """Render compact system stats fragment for HTMX polling."""
+    stats = _get_system_stats()
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/system_stats.html",
+        context={
+            "request": request,
+            "stats": stats,
+            "uptime_label": _format_uptime(stats.uptime_seconds),
+        },
+    )
+
+
+@app.get("/ui/partials/services", response_class=HTMLResponse)
+def ui_partial_services(request: Request) -> HTMLResponse:
+    """Render Docker services fragment for HTMX polling."""
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/services.html",
+        context={"request": request, "services": _get_services()},
     )
 
 
@@ -297,8 +557,9 @@ def ui_partial_camera(
     """Render camera card fragment for HTMX polling."""
     camera_info_obj = runtime.camera.info()
     return templates.TemplateResponse(
-        "partials/camera.html",
-        {
+        request=request,
+        name="partials/camera.html",
+        context={
             "request": request,
             "camera": camera_info_obj,
             "now_ts": int(datetime.now(UTC).timestamp()),
@@ -315,8 +576,9 @@ def ui_partial_rule(
     """Render irrigation rule card fragment for HTMX polling."""
     rule = runtime.state_repo.get_rule(actuator_id)
     return templates.TemplateResponse(
-        "partials/rule.html",
-        {"request": request, "rule": rule, "actuator_id": actuator_id},
+        request=request,
+        name="partials/rule.html",
+        context={"request": request, "rule": rule, "actuator_id": actuator_id},
     )
 
 
@@ -351,8 +613,9 @@ def ui_actuator_on(
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return templates.TemplateResponse(
-        "partials/actuator.html",
-        {"request": request, "state": state, "actuator_id": actuator_id, "zone": zone},
+        request=request,
+        name="partials/actuator.html",
+        context={"request": request, "state": state, "actuator_id": actuator_id, "zone": zone},
     )
 
 
@@ -378,8 +641,9 @@ def ui_actuator_off(
         ),
     )
     return templates.TemplateResponse(
-        "partials/actuator.html",
-        {"request": request, "state": state, "actuator_id": actuator_id, "zone": zone},
+        request=request,
+        name="partials/actuator.html",
+        context={"request": request, "state": state, "actuator_id": actuator_id, "zone": zone},
     )
 
 
@@ -425,6 +689,7 @@ def ui_rule_update(
         )
     runtime.upsert_rule(actuator_id, rule)
     return templates.TemplateResponse(
-        "partials/rule.html",
-        {"request": request, "rule": rule, "actuator_id": actuator_id, "saved": True},
+        request=request,
+        name="partials/rule.html",
+        context={"request": request, "rule": rule, "actuator_id": actuator_id, "saved": True},
     )

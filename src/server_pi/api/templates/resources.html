@@ -1,0 +1,1027 @@
+{% extends "base.html" %}
+
+{% block title %}Server Pi — Resources{% endblock %}
+
+{% block extra_head %}
+  {{ super() }}
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+  <style>
+    .resource-page {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .resource-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .resource-title {
+      font-size: clamp(1.9rem, 3vw, 2.5rem);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      margin: 0;
+      color: var(--sp-t1);
+    }
+
+    .resource-subtitle {
+      margin-top: 0.55rem;
+      color: var(--sp-t2);
+      max-width: 42rem;
+    }
+
+    .resource-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--sp-border);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--sp-surface) 80%, transparent);
+      color: var(--sp-t2);
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    .resource-live-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 999px;
+      background: var(--sp-ok);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--sp-ok) 55%, transparent);
+      animation: resource-live-pulse 1.8s ease-out infinite;
+    }
+
+    .resource-live[data-state="offline"] .resource-live-dot {
+      background: var(--sp-err);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--sp-err) 55%, transparent);
+    }
+
+    .resource-metrics,
+    .resource-layout,
+    .resource-side-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .resource-metrics {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    .resource-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .resource-side-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .resource-card {
+      padding: 1.25rem;
+      overflow: hidden;
+    }
+
+    .resource-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .resource-submetric {
+      color: var(--sp-t3);
+      font-size: 0.84rem;
+      margin-top: 0.7rem;
+    }
+
+    .resource-progress {
+      margin-top: 1rem;
+    }
+
+    .resource-progress .sp-bar-fill {
+      width: var(--bar-width, 0%);
+      background: var(--bar-color, var(--sp-ok));
+      box-shadow: 0 0 16px color-mix(in srgb, var(--bar-color, var(--sp-ok)) 35%, transparent);
+    }
+
+    .resource-network-value {
+      font-size: clamp(1.3rem, 2vw, 1.75rem);
+      letter-spacing: -0.03em;
+    }
+
+    .resource-chart-card,
+    .resource-process-card {
+      padding: 1.25rem;
+    }
+
+    .resource-chart-head,
+    .resource-table-head,
+    .resource-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .resource-chart-title-wrap {
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .resource-inline-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      color: var(--sp-t1);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .resource-chart-labels {
+      display: inline-flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+      color: var(--sp-t2);
+      font-size: 0.82rem;
+    }
+
+    .resource-swatch {
+      width: 0.6rem;
+      height: 0.6rem;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .resource-chart-shell {
+      height: 200px;
+      border: 1px solid var(--sp-border);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--sp-overlay) 80%, transparent), transparent),
+        var(--sp-depth);
+      padding: 0.4rem;
+    }
+
+    #resource-chart {
+      width: 100%;
+      height: 100%;
+    }
+
+    .resource-gauge-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .resource-gauge {
+      --gauge-value: 0;
+      --bar-color: var(--sp-ok);
+      position: relative;
+      width: 6.5rem;
+      height: 6.5rem;
+      border-radius: 50%;
+      background: conic-gradient(var(--bar-color) calc(var(--gauge-value) * 1%), var(--sp-overlay) 0);
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+
+    .resource-gauge::after {
+      content: "";
+      position: absolute;
+      inset: 0.65rem;
+      border-radius: 50%;
+      background: var(--sp-surface);
+      border: 1px solid var(--sp-border);
+    }
+
+    .resource-gauge-inner {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      gap: 0.15rem;
+    }
+
+    .resource-gauge-value {
+      color: var(--sp-t1);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .resource-gauge-label {
+      color: var(--sp-t3);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .resource-partitions {
+      display: grid;
+      gap: 0.7rem;
+      margin-top: 0.9rem;
+    }
+
+    .resource-partition {
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .resource-partition-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 0.82rem;
+      color: var(--sp-t2);
+    }
+
+    .resource-uptime-value {
+      margin-bottom: 0.4rem;
+    }
+
+    .resource-load-list {
+      display: grid;
+      gap: 0.7rem;
+      margin-top: 1rem;
+    }
+
+    .resource-load-row {
+      display: grid;
+      grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.7rem;
+      color: var(--sp-t2);
+      font-size: 0.82rem;
+    }
+
+    .resource-load-track {
+      height: 0.4rem;
+      border-radius: 999px;
+      background: var(--sp-overlay);
+      overflow: hidden;
+    }
+
+    .resource-load-fill {
+      height: 100%;
+      width: var(--load-width, 0%);
+      background: var(--bar-color, var(--sp-accent));
+      border-radius: inherit;
+      transition: width 0.5s ease-out;
+    }
+
+    .resource-free-value {
+      font-size: 1.7rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--sp-t1);
+    }
+
+    .resource-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid var(--sp-border);
+      background: var(--sp-depth);
+      color: var(--sp-t2);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .resource-table-wrap {
+      overflow-x: auto;
+    }
+
+    .resource-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 36rem;
+    }
+
+    .resource-table th {
+      padding: 0 0 0.8rem;
+      text-align: left;
+      color: var(--sp-t3);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+      border-bottom: 1px solid var(--sp-border);
+    }
+
+    .resource-table td {
+      padding: 0.9rem 0;
+      border-bottom: 1px solid var(--sp-border);
+      color: var(--sp-t2);
+      font-size: 0.92rem;
+      vertical-align: middle;
+    }
+
+    .resource-table tbody tr {
+      transition: background-color 0.2s ease-out;
+    }
+
+    .resource-table tbody tr:hover {
+      background: var(--sp-overlay);
+    }
+
+    .resource-status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 6rem;
+      padding: 0.28rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--sp-border);
+      background: color-mix(in srgb, var(--sp-overlay) 82%, transparent);
+      text-transform: capitalize;
+      font-size: 0.76rem;
+    }
+
+    .resource-status-pill[data-status="running"] {
+      color: var(--sp-ok);
+    }
+
+    .resource-status-pill[data-status="sleeping"],
+    .resource-status-pill[data-status="idle"] {
+      color: var(--sp-t2);
+    }
+
+    .resource-status-pill[data-status="stopped"],
+    .resource-status-pill[data-status="zombie"],
+    .resource-status-pill[data-status="dead"] {
+      color: var(--sp-err);
+    }
+
+    .resource-muted,
+    .resource-empty {
+      color: var(--sp-t3);
+    }
+
+    .resource-empty {
+      padding: 1rem 0;
+      text-align: center;
+      font-size: 0.92rem;
+    }
+
+    .resource-loading {
+      animation: resource-fade 1.6s ease-in-out infinite;
+    }
+
+    .resource-mono {
+      font-family: var(--sp-mono);
+      font-size: 0.82rem;
+    }
+
+    @keyframes resource-live-pulse {
+      0% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 32%, transparent);
+      }
+      70% {
+        box-shadow: 0 0 0 0.6rem transparent;
+      }
+      100% {
+        box-shadow: 0 0 0 0 transparent;
+      }
+    }
+
+    @keyframes resource-fade {
+      0%,
+      100% {
+        opacity: 0.55;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .resource-live-dot,
+      .resource-loading,
+      .sp-val-update {
+        animation: none;
+      }
+
+      .resource-load-fill {
+        transition: none;
+      }
+    }
+
+    @media (min-width: 640px) {
+      .resource-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (min-width: 1280px) {
+      .resource-metrics {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .resource-layout {
+        grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr);
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <section class="resource-page" aria-labelledby="resources-title">
+    <header class="resource-header">
+      <div>
+        <p class="sp-section-title" style="margin-bottom: 0.5rem;">System telemetry</p>
+        <h1 id="resources-title" class="resource-title">Resources</h1>
+        <p class="resource-subtitle">Live visibility into CPU, memory, disk, network throughput, uptime, and active processes across your Server Pi runtime.</p>
+      </div>
+      <div class="resource-live" id="resource-live-indicator" data-state="live" role="status" aria-live="polite">
+        <span class="resource-live-dot" aria-hidden="true"></span>
+        <span>
+          <span id="resource-live-text">Live · updates every 3s</span>
+          <span class="resource-muted" id="resource-last-sync"> · waiting for data</span>
+        </span>
+      </div>
+    </header>
+
+    <section class="resource-metrics" aria-label="Top resource metrics">
+      <article class="sp-card resource-card">
+        <div class="resource-card-head">
+          <div>
+            <div class="sp-metric-val resource-loading" id="cpu-val">--%</div>
+            <div class="sp-metric-lbl">CPU Usage</div>
+          </div>
+        </div>
+        <div class="resource-progress sp-bar-track" style="--bar-color: var(--sp-ok); --bar-width: 8%;">
+          <div class="sp-bar-fill" id="cpu-bar"></div>
+        </div>
+        <p class="resource-submetric" id="cpu-meta">Waiting for telemetry</p>
+      </article>
+
+      <article class="sp-card resource-card">
+        <div class="resource-card-head">
+          <div>
+            <div class="sp-metric-val resource-loading" id="mem-val">-- / -- GB</div>
+            <div class="sp-metric-lbl">Memory</div>
+          </div>
+        </div>
+        <div class="resource-progress sp-bar-track" style="--bar-color: var(--sp-accent); --bar-width: 8%;">
+          <div class="sp-bar-fill" id="mem-bar"></div>
+        </div>
+        <p class="resource-submetric" id="mem-meta">Waiting for telemetry</p>
+      </article>
+
+      <article class="sp-card resource-card">
+        <div class="resource-card-head">
+          <div>
+            <div class="sp-metric-val resource-loading" id="disk-val">--%</div>
+            <div class="sp-metric-lbl">Disk Usage</div>
+          </div>
+        </div>
+        <div class="resource-progress sp-bar-track" style="--bar-color: var(--sp-ok); --bar-width: 8%;">
+          <div class="sp-bar-fill" id="disk-bar"></div>
+        </div>
+        <p class="resource-submetric" id="disk-meta">Waiting for telemetry</p>
+      </article>
+
+      <article class="sp-card resource-card">
+        <div class="resource-card-head">
+          <div>
+            <div class="sp-metric-val resource-network-value resource-loading" id="net-val">↑ --  ↓ --</div>
+            <div class="sp-metric-lbl">Network</div>
+          </div>
+        </div>
+        <p class="resource-submetric" id="net-meta">Totals unavailable</p>
+      </article>
+    </section>
+
+    <section class="resource-layout" aria-label="Live telemetry details">
+      <article class="sp-card resource-chart-card">
+        <div class="resource-chart-head">
+          <div class="resource-chart-title-wrap">
+            <div class="resource-inline-title">
+              <span class="resource-live-dot" aria-hidden="true"></span>
+              <span>CPU &amp; Memory — Live</span>
+            </div>
+            <div class="resource-chart-labels">
+              <span><span class="resource-swatch" style="background: var(--sp-warn);"></span> CPU</span>
+              <span><span class="resource-swatch" style="background: var(--sp-accent);"></span> Memory</span>
+            </div>
+          </div>
+          <div class="resource-badge">Rolling 60 samples</div>
+        </div>
+        <div class="resource-chart-shell">
+          <div id="resource-chart" role="img" aria-label="CPU and memory live chart"></div>
+        </div>
+      </article>
+
+      <div class="resource-side-grid">
+        <article class="sp-card resource-card">
+          <div class="resource-panel-head">
+            <div>
+              <div class="sp-section-title" style="margin-bottom: 0.5rem;">Disk details</div>
+              <div class="resource-free-value resource-loading" id="disk-free-val">-- GB free</div>
+              <div class="resource-submetric" id="disk-detail-meta">Usage details pending</div>
+            </div>
+            <div class="resource-gauge" id="disk-gauge" style="--gauge-value: 0; --bar-color: var(--sp-ok);">
+              <div class="resource-gauge-inner">
+                <div class="resource-gauge-value" id="disk-gauge-val">--</div>
+                <div class="resource-gauge-label">Used</div>
+              </div>
+            </div>
+          </div>
+          <div class="resource-partitions" id="disk-partitions">
+            <div class="resource-empty">Waiting for partition data</div>
+          </div>
+        </article>
+
+        <article class="sp-card resource-card">
+          <div class="resource-panel-head">
+            <div>
+              <div class="sp-metric-val resource-uptime-value resource-loading" id="uptime-val">--</div>
+              <div class="sp-metric-lbl">Uptime</div>
+            </div>
+          </div>
+          <div class="resource-submetric" id="load-avg">Load -- · -- · --</div>
+          <div class="resource-load-list" id="load-rows">
+            <div class="resource-load-row">
+              <span>1m</span>
+              <div class="resource-load-track"><div class="resource-load-fill" style="--load-width: 0%; --bar-color: var(--sp-ok);"></div></div>
+              <span class="resource-muted">--</span>
+            </div>
+            <div class="resource-load-row">
+              <span>5m</span>
+              <div class="resource-load-track"><div class="resource-load-fill" style="--load-width: 0%; --bar-color: var(--sp-warn);"></div></div>
+              <span class="resource-muted">--</span>
+            </div>
+            <div class="resource-load-row">
+              <span>15m</span>
+              <div class="resource-load-track"><div class="resource-load-fill" style="--load-width: 0%; --bar-color: var(--sp-accent);"></div></div>
+              <span class="resource-muted">--</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="sp-card resource-process-card" aria-labelledby="processes-title">
+      <div class="resource-table-head">
+        <div class="resource-inline-title" id="processes-title">Processes</div>
+        <div class="resource-badge"><span id="proc-count">0</span> visible</div>
+      </div>
+      <div class="resource-table-wrap">
+        <table class="resource-table">
+          <thead>
+            <tr>
+              <th>PID</th>
+              <th>Name</th>
+              <th>CPU%</th>
+              <th>Memory (MB)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="proc-tbody">
+            <tr>
+              <td colspan="5" class="resource-empty">Process telemetry will appear here when the endpoint responds.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+
+  <script>
+    let prevNetStats = null;
+    let cpuHistory = [];
+    let memHistory = [];
+    let cpuChart = null;
+    let memChart = null;
+    let refreshHandle = null;
+
+    const POLL_MS = 3000;
+    const loadBarColors = ['var(--sp-ok)', 'var(--sp-warn)', 'var(--sp-accent)'];
+
+    function getCssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function hexToRgba(hex, alpha) {
+      const clean = (hex || '').replace('#', '').trim();
+      if (clean.length !== 6) {
+        return `rgba(255,255,255,${alpha})`;
+      }
+      const r = Number.parseInt(clean.slice(0, 2), 16);
+      const g = Number.parseInt(clean.slice(2, 4), 16);
+      const b = Number.parseInt(clean.slice(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function clampPercent(value) {
+      return Math.max(0, Math.min(100, Number(value) || 0));
+    }
+
+    function formatNumber(value, digits = 1) {
+      const num = Number(value);
+      return Number.isFinite(num) ? num.toFixed(digits) : '--';
+    }
+
+    function formatCompactGb(value, digits = 1) {
+      const num = Number(value);
+      return Number.isFinite(num) ? `${num.toFixed(digits)} GB` : '-- GB';
+    }
+
+    function formatMb(value, digits = 0) {
+      const num = Number(value);
+      return Number.isFinite(num) ? `${num.toFixed(digits)} MB` : '-- MB';
+    }
+
+    function escapeHTML(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function metricColor(percent) {
+      if (percent > 80) return 'var(--sp-err)';
+      if (percent >= 60) return 'var(--sp-warn)';
+      return 'var(--sp-ok)';
+    }
+
+    function applyMetricBar(barId, percent, fallbackColor) {
+      const bar = document.getElementById(barId);
+      if (!bar || !bar.parentElement) return;
+      const width = `${clampPercent(percent)}%`;
+      const color = fallbackColor || metricColor(percent);
+      bar.style.width = width;
+      bar.parentElement.style.setProperty('--bar-width', width);
+      bar.parentElement.style.setProperty('--bar-color', color);
+    }
+
+    function setLiveState(state, lastText) {
+      const live = document.getElementById('resource-live-indicator');
+      const text = document.getElementById('resource-live-text');
+      const last = document.getElementById('resource-last-sync');
+      if (live) live.dataset.state = state;
+      if (text) {
+        text.textContent = state === 'offline' ? 'Endpoint unavailable' : 'Live · updates every 3s';
+      }
+      if (last) {
+        last.textContent = lastText || '';
+      }
+    }
+
+    function clearLoadingState() {
+      document.querySelectorAll('.resource-loading').forEach((el) => el.classList.remove('resource-loading'));
+    }
+
+    function flashUpdate(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('sp-val-update');
+      void el.offsetWidth;
+      el.classList.add('sp-val-update');
+    }
+
+    function formatLastSync(date) {
+      return ` · updated ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+    }
+
+    function pickNumber(...values) {
+      for (const value of values) {
+        const num = Number(value);
+        if (Number.isFinite(num)) return num;
+      }
+      return null;
+    }
+
+    function pickArray(value) {
+      return Array.isArray(value) ? value : [];
+    }
+
+    function normalizePartitions(data) {
+      const partitions = pickArray(data.disk_partitions || data.partitions || data.disks)
+        .map((entry) => ({
+          mount: entry.mount || entry.device || entry.path || '/',
+          percent: pickNumber(entry.percent, entry.usage_percent, entry.used_percent, entry.disk_percent) ?? 0,
+          usedGb: pickNumber(entry.used_gb, entry.used, entry.usedGb),
+          totalGb: pickNumber(entry.total_gb, entry.total, entry.totalGb),
+        }))
+        .filter((entry) => entry.mount);
+
+      if (partitions.length) return partitions;
+
+      return [{
+        mount: '/',
+        percent: pickNumber(data.disk_percent, data.root_disk_percent) ?? 0,
+        usedGb: pickNumber(data.disk_used_gb, data.root_disk_used_gb),
+        totalGb: pickNumber(data.disk_total_gb, data.root_disk_total_gb),
+      }];
+    }
+
+    function renderPartitions(data) {
+      const container = document.getElementById('disk-partitions');
+      if (!container) return;
+      const partitions = normalizePartitions(data).slice(0, 4);
+      if (!partitions.length) {
+        container.innerHTML = '<div class="resource-empty">No partition data available</div>';
+        return;
+      }
+
+      container.innerHTML = partitions.map((partition) => {
+        const percent = clampPercent(partition.percent);
+        const color = metricColor(percent);
+        const used = Number.isFinite(partition.usedGb) ? `${partition.usedGb.toFixed(1)} GB` : '--';
+        const total = Number.isFinite(partition.totalGb) ? `${partition.totalGb.toFixed(1)} GB` : '--';
+        return `
+          <div class="resource-partition">
+            <div class="resource-partition-top">
+              <span class="resource-mono">${escapeHTML(partition.mount)}</span>
+              <span>${used} / ${total}</span>
+            </div>
+            <div class="sp-bar-track" style="--bar-width: ${percent}%; --bar-color: ${color};">
+              <div class="sp-bar-fill" style="width: ${percent}%; background: ${color};"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderLoadAverage(values, cpuCount) {
+      const label = document.getElementById('load-avg');
+      const container = document.getElementById('load-rows');
+      const normalized = Array.isArray(values) && values.length ? values.slice(0, 3) : [null, null, null];
+
+      if (label) {
+        label.textContent = `Load ${normalized.map((value) => Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '--').join(' · ')}`;
+      }
+
+      if (!container) return;
+      const scale = Math.max(1, Number(cpuCount) || 1);
+      container.innerHTML = normalized.map((value, index) => {
+        const numeric = Number(value);
+        const valid = Number.isFinite(numeric);
+        const width = valid ? Math.min(100, (numeric / scale) * 100) : 0;
+        return `
+          <div class="resource-load-row">
+            <span>${index === 0 ? '1m' : index === 1 ? '5m' : '15m'}</span>
+            <div class="resource-load-track">
+              <div class="resource-load-fill" style="--load-width: ${width}%; width: ${width}%; --bar-color: ${loadBarColors[index]}; background: ${loadBarColors[index]};"></div>
+            </div>
+            <span class="${valid ? '' : 'resource-muted'}">${valid ? numeric.toFixed(2) : '--'}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderProcesses(processes) {
+      const tbody = document.getElementById('proc-tbody');
+      const count = document.getElementById('proc-count');
+      if (!tbody) return;
+
+      const items = Array.isArray(processes) ? processes.slice() : [];
+      items.sort((a, b) => (Number(b.cpu_percent) || 0) - (Number(a.cpu_percent) || 0));
+      const visible = items.slice(0, 15);
+      if (count) count.textContent = String(visible.length);
+
+      if (!visible.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="resource-empty">No process telemetry available.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = visible.map((process) => {
+        const cpu = Number(process.cpu_percent) || 0;
+        const mem = pickNumber(process.mem_mb, process.memory_mb, process.memory) ?? 0;
+        const status = String(process.status || 'idle').toLowerCase();
+        const cpuColor = cpu > 80 ? 'var(--sp-err)' : cpu > 10 ? 'var(--sp-warn)' : 'var(--sp-t2)';
+        return `
+          <tr>
+            <td class="resource-mono" style="color: var(--sp-t3);">${escapeHTML(process.pid)}</td>
+            <td class="resource-mono" style="color: var(--sp-t1);">${escapeHTML(process.name || 'unknown')}</td>
+            <td style="color: ${cpuColor};">${cpu.toFixed(1)}%</td>
+            <td>${formatMb(mem)}</td>
+            <td><span class="resource-status-pill" data-status="${escapeHTML(status)}">${escapeHTML(status)}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function refreshStats() {
+      try {
+        const response = await fetch('/api/v1/system/stats', { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+        const data = response.ok ? await response.json() : null;
+        if (!data) throw new Error('stats unavailable');
+
+        clearLoadingState();
+
+        const cpuPercent = pickNumber(data.cpu_percent) ?? 0;
+        const memPercent = pickNumber(data.memory_percent) ?? 0;
+        const diskPercent = pickNumber(data.disk_percent) ?? 0;
+        const cpuCount = pickNumber(data.cpu_count, data.cpu_cores, data.cores) ?? 0;
+        const memoryUsedGb = pickNumber(data.memory_used_gb, data.mem_used_gb) ?? 0;
+        const memoryTotalGb = pickNumber(data.memory_total_gb, data.mem_total_gb) ?? 0;
+        const diskUsedGb = pickNumber(data.disk_used_gb, data.root_disk_used_gb) ?? 0;
+        const diskTotalGb = pickNumber(data.disk_total_gb, data.root_disk_total_gb) ?? 0;
+        const diskFreeGb = pickNumber(data.disk_free_gb, diskTotalGb - diskUsedGb) ?? 0;
+
+        const cpuVal = document.getElementById('cpu-val');
+        const cpuMeta = document.getElementById('cpu-meta');
+        const memVal = document.getElementById('mem-val');
+        const memMeta = document.getElementById('mem-meta');
+        const diskVal = document.getElementById('disk-val');
+        const diskMeta = document.getElementById('disk-meta');
+        const diskFreeVal = document.getElementById('disk-free-val');
+        const diskGaugeVal = document.getElementById('disk-gauge-val');
+        const diskGauge = document.getElementById('disk-gauge');
+        const diskDetailMeta = document.getElementById('disk-detail-meta');
+        const netVal = document.getElementById('net-val');
+        const netMeta = document.getElementById('net-meta');
+        const uptimeVal = document.getElementById('uptime-val');
+
+        if (cpuVal) cpuVal.textContent = `${cpuPercent.toFixed(1)}%`;
+        flashUpdate('cpu-val');
+        if (cpuMeta) cpuMeta.textContent = cpuCount ? `${cpuCount} cores` : 'Core count unavailable';
+        applyMetricBar('cpu-bar', cpuPercent, metricColor(cpuPercent));
+
+        if (memVal) memVal.textContent = `${memoryUsedGb.toFixed(1)} / ${memoryTotalGb.toFixed(1)} GB`;
+        flashUpdate('mem-val');
+        if (memMeta) memMeta.textContent = `${memoryUsedGb.toFixed(1)} GB used of ${memoryTotalGb.toFixed(1)} GB`;
+        applyMetricBar('mem-bar', memPercent, 'var(--sp-accent)');
+
+        if (diskVal) diskVal.textContent = `${diskPercent.toFixed(0)}%`;
+        flashUpdate('disk-val');
+        if (diskMeta) diskMeta.textContent = `${diskUsedGb.toFixed(1)} GB of ${diskTotalGb.toFixed(1)} GB used`;
+        applyMetricBar('disk-bar', diskPercent, metricColor(diskPercent));
+
+        if (diskFreeVal) diskFreeVal.textContent = `${diskFreeGb.toFixed(1)} GB free`;
+        if (diskGaugeVal) diskGaugeVal.textContent = `${diskPercent.toFixed(0)}%`;
+        if (diskGauge) {
+          diskGauge.style.setProperty('--gauge-value', clampPercent(diskPercent));
+          diskGauge.style.setProperty('--bar-color', metricColor(diskPercent));
+        }
+        if (diskDetailMeta) diskDetailMeta.textContent = `${diskUsedGb.toFixed(1)} GB used · ${diskTotalGb.toFixed(1)} GB total`;
+        renderPartitions(data);
+
+        const currentNet = {
+          sent: pickNumber(data.net_bytes_sent_mb, data.network_sent_mb, data.bytes_sent_mb) ?? 0,
+          recv: pickNumber(data.net_bytes_recv_mb, data.network_recv_mb, data.bytes_recv_mb) ?? 0,
+          ts: Date.now(),
+        };
+        if (prevNetStats && netVal) {
+          const deltaSeconds = Math.max((currentNet.ts - prevNetStats.ts) / 1000, 1);
+          const sentRate = Math.max(0, currentNet.sent - prevNetStats.sent) / deltaSeconds;
+          const recvRate = Math.max(0, currentNet.recv - prevNetStats.recv) / deltaSeconds;
+          netVal.textContent = `↑ ${sentRate.toFixed(2)} MB/s  ↓ ${recvRate.toFixed(2)} MB/s`;
+          flashUpdate('net-val');
+        } else if (netVal) {
+          netVal.textContent = '↑ --  ↓ --';
+          flashUpdate('net-val');
+        }
+        if (netMeta) {
+          netMeta.textContent = `Total ${currentNet.sent.toFixed(1)} MB sent · ${currentNet.recv.toFixed(1)} MB recv`;
+        }
+        prevNetStats = currentNet;
+
+        const uptimeSeconds = pickNumber(data.uptime_seconds) ?? 0;
+        const upDays = Math.floor(uptimeSeconds / 86400);
+        const upHours = Math.floor((uptimeSeconds % 86400) / 3600);
+        const upMins = Math.floor((uptimeSeconds % 3600) / 60);
+        if (uptimeVal) uptimeVal.textContent = `${upDays}d ${upHours}h ${upMins}m`;
+
+        renderLoadAverage(data.load_avg, cpuCount || 1);
+        renderProcesses(data.processes);
+
+        const now = new Date();
+        cpuHistory.push([now, cpuPercent]);
+        memHistory.push([now, memPercent]);
+        if (cpuHistory.length > 60) {
+          cpuHistory.shift();
+          memHistory.shift();
+        }
+        if (cpuChart) {
+          cpuChart.setOption({ series: [{ data: cpuHistory }, { data: memHistory }] });
+        }
+
+        setLiveState('live', formatLastSync(now));
+      } catch (error) {
+        setLiveState('offline', ' · retrying');
+        renderProcesses([]);
+        renderLoadAverage([], 1);
+      }
+    }
+
+    function initChart() {
+      const el = document.getElementById('resource-chart');
+      if (!el || !window.echarts) return;
+
+      const warn = getCssVar('--sp-warn');
+      const accent = getCssVar('--sp-accent');
+      const border = getCssVar('--sp-border');
+      const text = getCssVar('--sp-t2');
+      const muted = getCssVar('--sp-t3');
+      const surface = getCssVar('--sp-depth');
+      const tooltipBg = getCssVar('--sp-depth');
+
+      cpuChart = echarts.init(el, null, { renderer: 'canvas' });
+      cpuChart.setOption({
+        backgroundColor: 'transparent',
+        animationDuration: 320,
+        grid: { top: 12, right: 18, bottom: 30, left: 42 },
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: hexToRgba(tooltipBg, 0.96),
+          borderColor: border,
+          textStyle: { color: getCssVar('--sp-t1'), fontSize: 12 },
+        },
+        xAxis: {
+          type: 'time',
+          axisLine: { lineStyle: { color: border } },
+          axisTick: { show: false },
+          axisLabel: { color: muted, fontSize: 11 },
+          splitLine: { lineStyle: { color: border, type: 'dashed' } },
+        },
+        yAxis: {
+          type: 'value',
+          max: 100,
+          axisLine: { show: false },
+          axisTick: { show: false },
+          axisLabel: { color: muted, fontSize: 11, formatter: '{value}%' },
+          splitLine: { lineStyle: { color: border, type: 'dashed' } },
+        },
+        series: [
+          {
+            name: 'CPU',
+            type: 'line',
+            smooth: 0.3,
+            showSymbol: false,
+            lineStyle: { color: warn, width: 2 },
+            areaStyle: {
+              color: {
+                type: 'linear',
+                x: 0,
+                y: 0,
+                x2: 0,
+                y2: 1,
+                colorStops: [
+                  { offset: 0, color: hexToRgba(warn, 0.18) },
+                  { offset: 1, color: hexToRgba(warn, 0) },
+                ],
+              },
+            },
+            data: [],
+          },
+          {
+            name: 'Memory',
+            type: 'line',
+            smooth: 0.3,
+            showSymbol: false,
+            lineStyle: { color: accent, width: 2 },
+            areaStyle: {
+              color: {
+                type: 'linear',
+                x: 0,
+                y: 0,
+                x2: 0,
+                y2: 1,
+                colorStops: [
+                  { offset: 0, color: hexToRgba(accent, 0.16) },
+                  { offset: 1, color: hexToRgba(accent, 0) },
+                ],
+              },
+            },
+            data: [],
+          },
+        ],
+        textStyle: {
+          color: text,
+          fontFamily: getCssVar('--sp-font'),
+        },
+      });
+
+      window.addEventListener('resize', () => {
+        if (cpuChart) cpuChart.resize();
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.echarts) {
+        initChart();
+      }
+      refreshStats();
+      refreshHandle = window.setInterval(refreshStats, POLL_MS);
+    });
+  </script>
+{% endblock %}

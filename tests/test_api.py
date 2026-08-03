@@ -73,3 +73,46 @@ def test_state_repo_persistence(tmp_path: Path) -> None:
     second = client.get("/api/v1/actuators/irrigation-main/state", params={"zone": "greenhouse"})
     assert second.status_code == 200
     assert second.json()["state"] == "off"
+
+
+def test_home_dashboard_and_resources_routes(tmp_path: Path) -> None:
+    runtime = make_runtime(tmp_path)
+    app.dependency_overrides[get_runtime] = lambda: runtime
+    client = TestClient(app)
+
+    home = client.get("/")
+    assert home.status_code == 200
+    assert "Zone surfaces" in home.text
+    assert "/ui/partials/services" in home.text
+
+    dashboard = client.get("/dashboard")
+    assert dashboard.status_code == 200
+    assert "IoT operations dashboard" in dashboard.text
+
+    resources = client.get("/resources")
+    assert resources.status_code == 200
+    assert 'id="resources-title"' in resources.text
+
+
+def test_system_stats_and_services_routes(tmp_path: Path) -> None:
+    runtime = make_runtime(tmp_path)
+    app.dependency_overrides[get_runtime] = lambda: runtime
+    client = TestClient(app)
+
+    system_stats = client.get("/api/v1/system/stats")
+    assert system_stats.status_code == 200
+    stats_payload = system_stats.json()
+    assert "cpu_percent" in stats_payload
+    assert "processes" in stats_payload
+
+    services = client.get("/api/v1/services")
+    assert services.status_code == 200
+    assert isinstance(services.json(), list)
+
+    stats_partial = client.get("/ui/partials/system-stats")
+    assert stats_partial.status_code == 200
+    assert "CPU" in stats_partial.text
+
+    services_partial = client.get("/ui/partials/services")
+    assert services_partial.status_code == 200
+    assert "Docker" in services_partial.text
