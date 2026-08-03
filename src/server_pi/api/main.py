@@ -330,7 +330,7 @@ def ui_actuator_on(
     request: Request,
     actuator_id: str,
     zone: str = Query(..., min_length=1),
-    duration_sec: int = Query(30, ge=1, le=3600),
+    duration_sec: int = Form(30, ge=1, le=3600),
     runtime: AppState = Depends(get_runtime),
 ) -> HTMLResponse:
     """Activate actuator via UI and return updated card fragment."""
