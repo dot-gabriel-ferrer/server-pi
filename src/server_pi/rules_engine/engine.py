@@ -72,14 +72,14 @@ class IrrigationRuleEngine:
                     f"{rule.weather.max_ambient_temp_c}°C",
                 )
             if (
-                rule.weather.min_ambient_humidity_pct is not None
+                rule.weather.max_ambient_humidity_pct is not None
                 and ambient_reading.humidity_pct is not None
-                and ambient_reading.humidity_pct > rule.weather.min_ambient_humidity_pct
+                and ambient_reading.humidity_pct > rule.weather.max_ambient_humidity_pct
             ):
                 return RuleDecision(
                     False,
-                    f"ambient humidity {ambient_reading.humidity_pct}% exceeds gate "
-                    f"{rule.weather.min_ambient_humidity_pct}%",
+                    f"ambient humidity {ambient_reading.humidity_pct}% exceeds max "
+                    f"{rule.weather.max_ambient_humidity_pct}%",
                 )
 
         return RuleDecision(True, "all conditions met")
